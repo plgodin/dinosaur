@@ -74,6 +74,13 @@
   min-height: 3em; /* Reserve space for text */
 }
 
+.dino-image {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
 .interaction-controls {
   margin-bottom: 2rem;
 }

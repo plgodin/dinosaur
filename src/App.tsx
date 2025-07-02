@@ -1,11 +1,20 @@
 import { useState, useEffect } from 'react'
 import { auth } from './firebase'
 import { onAuthStateChanged, signInAnonymously, type User } from 'firebase/auth'
+import { getFunctions, httpsCallable } from 'firebase/functions'
 import './App.css'
+
+// Define the structure of the activity data
+interface Activity {
+  activityText: string
+  imageUrl: string
+}
 
 function App() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [activity, setActivity] = useState<Activity | null>(null)
+  const [isGenerating, setIsGenerating] = useState(false)
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -23,6 +32,21 @@ function App() {
     return () => unsubscribe()
   }, [])
 
+  const handleGenerateActivity = async () => {
+    setIsGenerating(true)
+    try {
+      const functions = getFunctions()
+      const generateActivity = httpsCallable(functions, 'generateActivity')
+      const result = await generateActivity()
+      setActivity(result.data as Activity)
+    } catch (error) {
+      console.error("Error calling generateActivity function:", error)
+      alert("Failed to generate new activity. Please check the console for details.")
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
   if (loading) {
     return <div>Loading...</div>
   }
@@ -38,17 +62,25 @@ function App() {
       </header>
       <main>
         <div className="dino-display">
-          <div className="dino-image-placeholder">
-            <p>Dino image will appear here</p>
-          </div>
+          {isGenerating ? (
+            <div className="dino-image-placeholder">
+              <p>Checking on your dino...</p>
+            </div>
+          ) : activity ? (
+            <img src={activity.imageUrl} alt={activity.activityText} className="dino-image" />
+          ) : (
+            <div className="dino-image-placeholder">
+              <p>Click the button to see your dino!</p>
+            </div>
+          )}
           <p className="dino-activity">
-            Your dino is...
+            {isGenerating ? "..." : (activity ? activity.activityText : "Your dino is...")}
           </p>
         </div>
         <div className="interaction-controls">
-          <button>Pet</button>
-          <button>Play</button>
-          <button>Talk</button>
+          <button onClick={handleGenerateActivity} disabled={isGenerating}>
+            {isGenerating ? 'Generating...' : 'Generate New Activity'}
+          </button>
         </div>
         <div className="activity-log">
           <h2>Activity Log</h2>
