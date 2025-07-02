@@ -1,4 +1,3 @@
 - Style app properly
 - Use better image model
-- Translate to French
 - Add auth to Firestore

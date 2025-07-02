@@ -13,6 +13,7 @@ import { defineSecret } from "firebase-functions/params";
 import OpenAI from "openai";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore, Timestamp } from "firebase-admin/firestore";
+import { generateActivityPrompt } from "./promptUtils";
 
 initializeApp();
 const db = getFirestore();
@@ -39,16 +40,13 @@ export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (reque
 
   try {
     // 1. Generate a creative activity description.
+    const systemPrompt = generateActivityPrompt();
     const textResponse = await openai.chat.completions.create({
       model: "gpt-4o",
       temperature: 0.7,
       messages: [{
         role: "system",
-        content: `Vous êtes un écrivain créatif pour une application d'animal de compagnie virtuel.
-                  Décrivez une activité courte, amusante et un peu ridicule
-                  que pourrait faire un gentil vélociraptor de compagnie.
-                  Restez-en à une seule phrase concise.
-                  Générez la description en français.`,
+        content: systemPrompt,
       }, {
         role: "user",
         content: "Que fait mon dino en ce moment?",
