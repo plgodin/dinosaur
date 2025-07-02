@@ -44,13 +44,14 @@ export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (reque
       temperature: 0.7,
       messages: [{
         role: "system",
-        content: `You are a creative writer for a virtual pet app.
-                  Describe a short, fun, and slightly silly activity
-                  that a friendly pet velociraptor might be doing.
-                  Keep it to a single, concise sentence.`,
+        content: `Vous êtes un écrivain créatif pour une application d'animal de compagnie virtuel.
+                  Décrivez une activité courte, amusante et un peu ridicule
+                  que pourrait faire un gentil vélociraptor de compagnie.
+                  Restez-en à une seule phrase concise.
+                  Générez la description en français.`,
       }, {
         role: "user",
-        content: "What is my dino doing right now?",
+        content: "Que fait mon dino en ce moment?",
       }],
       max_tokens: 40,
     });

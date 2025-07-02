@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Welcome to Firebase Hosting</title>
+    <title>Bienvenue sur Firebase Hosting</title>
 
     <!-- update the version number as needed -->
     <script defer src="/__/firebase/11.10.0/firebase-app-compat.js"></script>
@@ -17,7 +17,7 @@
     <script defer src="/__/firebase/11.10.0/firebase-analytics-compat.js"></script>
     <script defer src="/__/firebase/11.10.0/firebase-remote-config-compat.js"></script>
     <script defer src="/__/firebase/11.10.0/firebase-performance-compat.js"></script>
-    <!-- 
+    <!--
       initialize the SDK after all desired features are loaded, set useEmulator to false
       to avoid connecting the SDK to running emulators.
     -->
@@ -40,12 +40,12 @@
   </head>
   <body>
     <div id="message">
-      <h2>Welcome</h2>
-      <h1>Firebase Hosting Setup Complete</h1>
-      <p>You're seeing this because you've successfully setup Firebase Hosting. Now it's time to go build something extraordinary!</p>
-      <a target="_blank" href="https://firebase.google.com/docs/hosting/">Open Hosting Documentation</a>
+      <h2>Bienvenue</h2>
+      <h1>Configuration de Firebase Hosting terminée</h1>
+      <p>Vous voyez ceci parce que vous avez configuré Firebase Hosting avec succès. Il est maintenant temps de construire quelque chose d'extraordinaire!</p>
+      <a target="_blank" href="https://firebase.google.com/docs/hosting/">Ouvrir la documentation sur l'hébergement</a>
     </div>
-    <p id="load">Firebase SDK Loading&hellip;</p>
+    <p id="load">Chargement du SDK Firebase&hellip;</p>
 
     <script>
       document.addEventListener('DOMContentLoaded', function() {
@@ -68,20 +68,20 @@
         try {
           let app = firebase.app();
           let features = [
-            'auth', 
-            'database', 
+            'auth',
+            'database',
             'firestore',
             'functions',
-            'messaging', 
-            'storage', 
-            'analytics', 
+            'messaging',
+            'storage',
+            'analytics',
             'remoteConfig',
             'performance',
           ].filter(feature => typeof app[feature] === 'function');
-          loadEl.textContent = `Firebase SDK loaded with ${features.join(', ')}`;
+          loadEl.textContent = `SDK Firebase chargé avec ${features.join(', ')}`;
         } catch (e) {
           console.error(e);
-          loadEl.textContent = 'Error loading the Firebase SDK, check the console.';
+          loadEl.textContent = 'Erreur lors du chargement du SDK Firebase, consultez la console.';
         }
       });
     </script>

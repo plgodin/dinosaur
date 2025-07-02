@@ -61,18 +61,18 @@ function App() {
       // No need to set activity state here, the onSnapshot listener will do it.
     } catch (error) {
       console.error("Error calling generateActivity function:", error)
-      alert("Failed to generate new activity. Please check the console for details.")
+      alert("La génération d'une nouvelle activité a échoué. Veuillez consulter la console pour plus de détails.")
     } finally {
       setIsGenerating(false)
     }
   }
 
   if (loading) {
-    return <div>Loading...</div>
+    return <div>Chargement...</div>
   }
 
   if (!user) {
-    return <div>Could not sign in. Please try again later.</div>
+    return <div>Impossible de se connecter. Veuillez réessayer plus tard.</div>
   }
 
   const latestActivity = diary[0];
@@ -80,32 +80,32 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>Dino Companion</h1>
+        <h1>Compagnon dino</h1>
       </header>
       <main>
         <div className="dino-display">
           {isGenerating && !latestActivity ? (
             <div className="dino-image-placeholder">
-              <p>Checking on your dino...</p>
+              <p>On regarde ce que ton dino fait...</p>
             </div>
           ) : latestActivity ? (
             <img src={latestActivity.imageUrl} alt={latestActivity.description} className="dino-image" />
           ) : (
             <div className="dino-image-placeholder">
-              <p>Click the button to see what your dino is up to!</p>
+              <p>Clique sur le bouton pour voir ce que ton dino fait!</p>
             </div>
           )}
           <p className="dino-activity">
-            {isGenerating ? "..." : (latestActivity ? latestActivity.description : "Your dino is waiting...")}
+            {isGenerating ? "..." : (latestActivity ? latestActivity.description : "Ton dino attend...")}
           </p>
         </div>
         <div className="interaction-controls">
           <button onClick={handleGenerateActivity} disabled={isGenerating}>
-            {isGenerating ? 'Checking...' : 'What is my dino doing?'}
+            {isGenerating ? 'Vérification...' : 'Que fait mon dino?'}
           </button>
         </div>
         <div className="activity-log">
-          <h2>Dino's Diary</h2>
+          <h2>Journal de dino</h2>
           {diary.map((activity) => (
             <div key={activity.id} className="diary-entry">
               <img src={activity.imageUrl} alt={activity.description} className="diary-image" />
