@@ -102,33 +102,25 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>Compagnon dino</h1>
+        <h1>Le dino à Lau</h1>
       </header>
       <main>
-        <div className="dino-display">
           {isGenerating && !recentActivity ? (
             <div className="dino-image-placeholder">
-              <p>On regarde ce que ton dino fait...</p>
+              <p>On regarde ce que fait ton dino...</p>
             </div>
           ) : recentActivity ? (
             <img src={recentActivity.imageUrl} alt={recentActivity.description} className="dino-image" />
           ) : (
             <div className="dino-image-placeholder">
-              <p>On ne sait pas ce que ton dino fait en ce moment.<br/>Clique sur le bouton pour le découvrir !</p>
+              <p>Que fait ton dino en ce moment?<br/><br/>¯\_(ツ)_/¯<br/><br/>Clique sur le bouton pour le découvrir !</p>
             </div>
           )}
-          <p className="dino-activity">
-            {isGenerating
-              ? "..."
-              : (recentActivity
-                  ? recentActivity.description
-                  : "Aucune activité récente. Clique sur le bouton pour voir ce que fait ton dino !")}
-          </p>
-        </div>
+          {recentActivity && <p className="dino-activity">{recentActivity.description}</p>}
         <div className="interaction-controls">
           {(!recentActivity || debugMode) && (
             <button onClick={handleGenerateActivity} disabled={isGenerating}>
-              {isGenerating ? 'Vérification...' : 'Que fait mon dino?'}
+              {isGenerating ? 'On le cherche...' : 'Que fait mon dino?'}
             </button>
           )}
         </div>
@@ -139,7 +131,13 @@ function App() {
               <img src={activity.imageUrl} alt={activity.description} className="diary-image" />
               <div className="diary-content">
                 <p className="diary-description">{activity.description}</p>
-                <p className="diary-timestamp">{activity.timestamp.toDate().toLocaleString()}</p>
+                <p className="diary-timestamp">{activity.timestamp.toDate().toLocaleString('fr-FR', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}</p>
               </div>
             </div>
           ))}
