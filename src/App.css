@@ -100,8 +100,45 @@
   background-color: #f8f8f8;
 }
 
+.interaction-controls button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
 .activity-log {
-  text-align: left;
-  border-top: 1px solid #eee;
-  padding-top: 1rem;
+  margin-top: 40px;
+  width: 100%;
+}
+
+.diary-entry {
+  display: flex;
+  align-items: center;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.diary-image {
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  margin-right: 15px;
+  object-fit: cover;
+}
+
+.diary-content {
+  flex: 1;
+}
+
+.diary-description {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.diary-timestamp {
+  margin: 5px 0 0;
+  font-size: 0.8rem;
+  color: #666;
 }

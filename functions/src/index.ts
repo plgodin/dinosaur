@@ -11,6 +11,11 @@ import { onCall } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import { defineSecret } from "firebase-functions/params";
 import OpenAI from "openai";
+import { initializeApp } from "firebase-admin/app";
+import { getFirestore, Timestamp } from "firebase-admin/firestore";
+
+initializeApp();
+const db = getFirestore();
 
 const openaiApiKey = defineSecret("OPENAI_API_KEY");
 
@@ -27,17 +32,21 @@ export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (reque
 
   logger.info("Generating new activity for user:", request.auth?.uid);
 
+  if (!request.auth) {
+    throw new Error("Authentication is required to generate an activity.");
+  }
+  const userId = request.auth.uid;
+
   try {
     // 1. Generate a creative activity description.
     const textResponse = await openai.chat.completions.create({
       model: "gpt-4o",
+      temperature: 0.7,
       messages: [{
         role: "system",
         content: `You are a creative writer for a virtual pet app.
                   Describe a short, fun, and slightly silly activity
                   that a friendly pet velociraptor might be doing.
-                  The user's pet dino has the following personality: ${dinoDna}.
-                  Do not mention the dino's personality in the activity description.
                   Keep it to a single, concise sentence.`,
       }, {
         role: "user",
@@ -67,6 +76,33 @@ export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (reque
       throw new Error("Failed to generate image URL.");
     }
     logger.info("Generated image URL:", imageUrl);
+
+    const activityData = {
+      description: activityText,
+      imageUrl,
+      timestamp: Timestamp.now(),
+      interactionType: "ambient",
+    };
+
+    const userDocRef = db.collection("users").doc(userId);
+    const dinoDocRef = userDocRef.collection("dino").doc("main");
+
+    // Check if dino exists, if not, create it with a name.
+    const dinoDoc = await dinoDocRef.get();
+    if (!dinoDoc.exists) {
+      await dinoDocRef.set({
+        name: "Dino", // A default name
+        // Initialize other personality traits as per blueprint if needed
+      });
+    }
+
+    // Save the new activity
+    await userDocRef.collection("activities").add(activityData);
+
+    // Update the last activity timestamp on the dino document
+    await dinoDocRef.update({
+      lastActivityTimestamp: activityData.timestamp,
+    });
 
     // 3. Return the results to the client.
     return {
