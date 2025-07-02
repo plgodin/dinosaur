@@ -1,3 +1,4 @@
 - Style app properly
 - Use better image model
 - Add auth to Firestore
+- Add infinite scroll or dedicated page for activity log

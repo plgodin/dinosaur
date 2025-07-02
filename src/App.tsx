@@ -18,6 +18,30 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [diary, setDiary] = useState<Activity[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
+  const [debugMode, setDebugMode] = useState(false)
+
+  // Check if the latest activity is recent (within 2 hours)
+  const latestActivity = diary[0];
+  let recentActivity: Activity | null = null;
+  if (latestActivity) {
+    const now = new Date();
+    const activityDate = latestActivity.timestamp.toDate();
+    const diffMs = now.getTime() - activityDate.getTime();
+    const twoHoursMs = 2 * 60 * 60 * 1000;
+    if (diffMs <= twoHoursMs) {
+      recentActivity = latestActivity;
+    }
+  }
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'd') {
+        setDebugMode((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -75,8 +99,6 @@ function App() {
     return <div>Impossible de se connecter. Veuillez réessayer plus tard.</div>
   }
 
-  const latestActivity = diary[0];
-
   return (
     <div className="App">
       <header className="App-header">
@@ -84,25 +106,31 @@ function App() {
       </header>
       <main>
         <div className="dino-display">
-          {isGenerating && !latestActivity ? (
+          {isGenerating && !recentActivity ? (
             <div className="dino-image-placeholder">
               <p>On regarde ce que ton dino fait...</p>
             </div>
-          ) : latestActivity ? (
-            <img src={latestActivity.imageUrl} alt={latestActivity.description} className="dino-image" />
+          ) : recentActivity ? (
+            <img src={recentActivity.imageUrl} alt={recentActivity.description} className="dino-image" />
           ) : (
             <div className="dino-image-placeholder">
-              <p>Clique sur le bouton pour voir ce que ton dino fait!</p>
+              <p>On ne sait pas ce que ton dino fait en ce moment.<br/>Clique sur le bouton pour le découvrir !</p>
             </div>
           )}
           <p className="dino-activity">
-            {isGenerating ? "..." : (latestActivity ? latestActivity.description : "Ton dino attend...")}
+            {isGenerating
+              ? "..."
+              : (recentActivity
+                  ? recentActivity.description
+                  : "Aucune activité récente. Clique sur le bouton pour voir ce que fait ton dino !")}
           </p>
         </div>
         <div className="interaction-controls">
-          <button onClick={handleGenerateActivity} disabled={isGenerating}>
-            {isGenerating ? 'Vérification...' : 'Que fait mon dino?'}
-          </button>
+          {(!recentActivity || debugMode) && (
+            <button onClick={handleGenerateActivity} disabled={isGenerating}>
+              {isGenerating ? 'Vérification...' : 'Que fait mon dino?'}
+            </button>
+          )}
         </div>
         <div className="activity-log">
           <h2>Journal de dino</h2>
