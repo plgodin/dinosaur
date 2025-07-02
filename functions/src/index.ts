@@ -12,20 +12,13 @@ import * as logger from "firebase-functions/logger";
 import { defineSecret } from "firebase-functions/params";
 import OpenAI from "openai";
 
-// Start writing functions
-// https://firebase.google.com/docs/functions/typescript
-
-// export const helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
-
 const openaiApiKey = defineSecret("OPENAI_API_KEY");
 
 // The "DNA" of our dinosaur, used to keep its appearance consistent.
-const dinoDna = `A friendly T-Rex, chartreuse green with darker forest green
-stripes, big amber eyes, wearing a tiny red bandana around its neck.
-The style is a cute, simple, cartoon illustration with a white background.`;
+const dinoDna = `A friendly velociraptor.
+It is chartreuse green with darker, forest green stripes on its back.
+It has large amber eyes and an expressive face.
+The style is a realistic and detailed.`;
 
 export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (request) => {
   const openai = new OpenAI({
@@ -37,13 +30,14 @@ export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (reque
   try {
     // 1. Generate a creative activity description.
     const textResponse = await openai.chat.completions.create({
-      model: "gpt-4-turbo",
+      model: "gpt-4o",
       messages: [{
         role: "system",
         content: `You are a creative writer for a virtual pet app.
                   Describe a short, fun, and slightly silly activity
-                  that a friendly pet T-Rex might be doing.
+                  that a friendly pet velociraptor might be doing.
                   The user's pet dino has the following personality: ${dinoDna}.
+                  Do not mention the dino's personality in the activity description.
                   Keep it to a single, concise sentence.`,
       }, {
         role: "user",
