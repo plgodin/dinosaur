@@ -10,21 +10,22 @@
 import { onCall } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import { defineSecret } from "firebase-functions/params";
-import OpenAI from "openai";
+import OpenAI, { toFile } from "openai";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore, Timestamp } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
 import { generateActivityPrompt } from "./promptUtils";
+import * as fs from "fs";
+import * as path from "path";
 
 initializeApp();
 const db = getFirestore();
+const storage = getStorage();
 
 const openaiApiKey = defineSecret("OPENAI_API_KEY");
 
 // The "DNA" of our dinosaur, used to keep its appearance consistent.
-const dinoDna = `A friendly velociraptor.
-It is chartreuse green with darker, forest green stripes on its back.
-It has large amber eyes and an expressive face.
-The style is a realistic and detailed.`;
+// We are now using reference images instead of a DNA prompt.
 
 export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (request) => {
   const openai = new OpenAI({
@@ -61,20 +62,70 @@ export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (reque
     logger.info("Generated activity text:", activityText);
 
     // 2. Generate an image based on the activity.
-    const imagePrompt = `${dinoDna}, currently: ${activityText}`;
-    const imageResponse = await openai.images.generate({
-      model: "dall-e-3",
+    const referenceImagePath = path.resolve(__dirname, "../src/reference-images");
+    if (!fs.existsSync(referenceImagePath)) {
+      throw new Error("Reference images directory not found.");
+    }
+
+    const imageFiles = fs.readdirSync(referenceImagePath).slice(0, 4);
+
+    const images = (await Promise.all(
+      imageFiles.map(async (file) => {
+        const filePath = path.join(referenceImagePath, file);
+        const ext = path.extname(file).toLowerCase();
+        let mimeType: string | undefined;
+
+        if (ext === ".png") {
+          mimeType = "image/png";
+        } else if (ext === ".jpg" || ext === ".jpeg") {
+          mimeType = "image/jpeg";
+        } else if (ext === ".webp") {
+          mimeType = "image/webp";
+        } else {
+          logger.warn(`Skipping unsupported file type: ${file}`);
+          return null;
+        }
+
+        return await toFile(fs.createReadStream(filePath), file, {
+          type: mimeType,
+        });
+      }),
+    )).filter((image): image is NonNullable<typeof image> => image !== null);
+
+    if (images.length === 0) {
+      throw new Error("No reference images with supported format (png, jpeg, webp) found in directory.");
+    }
+
+    const imagePrompt = `A friendly velociraptor in a realistic and detailed style, currently: ${activityText}`;
+    const imageResponse = await openai.images.edit({
+      model: "gpt-image-1",
+      image: images,
       prompt: imagePrompt,
       n: 1,
       size: "1024x1024",
-      quality: "standard",
     });
 
-    const imageUrl = imageResponse.data?.[0]?.url;
-    if (!imageUrl) {
-      throw new Error("Failed to generate image URL.");
+    const imageBase64 = imageResponse.data?.[0]?.b64_json;
+    if (!imageBase64) {
+      throw new Error("Failed to generate image data.");
     }
-    logger.info("Generated image URL:", imageUrl);
+
+    const imageBuffer = Buffer.from(imageBase64, "base64");
+
+    const bucket = storage.bucket();
+    const fileName = `dino-images/${userId}/${Date.now()}.png`;
+    const file = bucket.file(fileName);
+
+    await file.save(imageBuffer, {
+      metadata: {
+        contentType: "image/png",
+      },
+      public: true,
+    });
+
+    const imageUrl = file.publicUrl();
+
+    logger.info("Generated image and uploaded to:", imageUrl);
 
     const activityData = {
       description: activityText,
