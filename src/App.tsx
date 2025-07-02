@@ -128,7 +128,8 @@ function App() {
           <h2>Journal de dino</h2>
           {diary.map((activity) => (
             <div key={activity.id} className="diary-entry">
-              <img src={activity.imageUrl} alt={activity.description} className="diary-image" />
+              {/* Disabled because images get deleted after a short time */}
+              {/* <img src={activity.imageUrl} alt={activity.description} className="diary-image" /> */}
               <div className="diary-content">
                 <p className="diary-description">{activity.description}</p>
                 <p className="diary-timestamp">{activity.timestamp.toDate().toLocaleString('fr-FR', {
