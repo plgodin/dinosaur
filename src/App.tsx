@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { auth, db } from './firebase'
 import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signInAnonymously, type User } from 'firebase/auth'
 import { getFunctions, httpsCallable } from 'firebase/functions'
-import { collection, query, orderBy, onSnapshot, Timestamp, limit, startAfter, getDocs, type QueryDocumentSnapshot } from 'firebase/firestore'
+import { collection, query, orderBy, onSnapshot, Timestamp, limit, startAfter, getDocs } from 'firebase/firestore'
 import './App.css'
 
 // Define the structure of the activity data
@@ -26,9 +26,8 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [diary, setDiary] = useState<Activity[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
-  const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot | null>(null);
-  const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [totalActivities, setTotalActivities] = useState(0);
 
 
   // New state for interactions
@@ -78,8 +77,7 @@ function App() {
   useEffect(() => {
     if (!user) {
       setDiary([]);
-      setHasMore(true);
-      setLastDoc(null);
+      setTotalActivities(0);
       return;
     }
 
@@ -92,27 +90,25 @@ function App() {
         ...doc.data()
       } as Activity));
       setDiary(userActivities);
+    });
 
-      const lastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
-      setLastDoc(lastVisible);
-
-      if (querySnapshot.docs.length < ActivitiesPerBatch) {
-        setHasMore(false);
-      } else {
-        setHasMore(true);
-      }
+    getDocs(activitiesCol).then((snapshot) => {
+      setTotalActivities(snapshot.size);
     });
 
     return () => unsubscribe();
   }, [user]);
 
+  const hasMore = diary.length < totalActivities;
+
   const loadMoreActivities = useCallback(async () => {
-    if (loadingMore || !hasMore || !lastDoc || !user) return;
+    if (loadingMore || !hasMore || !user) return;
     setLoadingMore(true);
 
     try {
       const activitiesCol = collection(db, 'users', user.uid, 'activities');
-      const q = query(activitiesCol, orderBy('timestamp', 'desc'), startAfter(lastDoc), limit(ActivitiesPerBatch));
+      const lastDoc = diary[diary.length - 1];
+      const q = query(activitiesCol, orderBy('timestamp', 'desc'), startAfter(lastDoc.timestamp), limit(ActivitiesPerBatch));
       const documentSnapshots = await getDocs(q);
 
       const newActivities = documentSnapshots.docs.map(doc => ({
@@ -121,19 +117,12 @@ function App() {
       } as Activity));
 
       setDiary(prev => [...prev, ...newActivities]);
-
-      const newLastVisible = documentSnapshots.docs[documentSnapshots.docs.length - 1];
-      setLastDoc(newLastVisible);
-
-      if (documentSnapshots.docs.length < ActivitiesPerBatch) {
-        setHasMore(false);
-      }
     } catch (error) {
       console.error("Error loading more activities:", error);
     } finally {
       setLoadingMore(false);
     }
-  }, [user, lastDoc, hasMore, loadingMore]);
+  }, [user, diary, hasMore, loadingMore]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -217,10 +206,24 @@ function App() {
     );
   }
 
+  const getRelationshipLevel = (totalActivities: number) => {
+    if (totalActivities >= 55) return "Meilleur ami";
+    if (totalActivities >= 42) return "Fidèle compagnon";
+    if (totalActivities >= 32) return "Complice rusé";
+    if (totalActivities >= 23) return "Partenaire de chasse";
+    if (totalActivities >= 15) return "Nouvel ami";
+    if (totalActivities >= 9) return "Compagnon curieux";
+    if (totalActivities >= 4) return "Connaissance prudente";
+    return "Nouvelle rencontre";
+  };
+
+  const relationshipLevel = getRelationshipLevel(totalActivities);
+
   return (
     <div className="App">
       <header className="App-header">
         <h1>Le dino à Lau</h1>
+        {<p className="relationship-level">{relationshipLevel}</p>}
       </header>
       <main>
           {isGenerating ? (

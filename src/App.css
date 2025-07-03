@@ -90,8 +90,13 @@ body::before {
 }
 
 .App-header {
-  margin-bottom: 3rem;
-  position: relative;
+  margin-bottom: 1rem;
+}
+
+.relationship-level {
+  font-size: 1.2rem;
+  color: #469fb8;
+  margin-top: 0;
 }
 
 .App-header h1 {
