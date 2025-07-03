@@ -46,7 +46,7 @@ export function generateActivityPrompt(date: Date = new Date()): string {
   const specialDay = getSpecialDay(date);
 
   const commonPrefix = "Vous êtes un écrivain créatif pour une application d'animal de compagnie virtuel. Décrivez une activité";
-  const commonSuffix = "qu'un gentil vélociraptor de compagnie pourrait faire. Restez-en à une seule phrase concise. Générez la description en français, et utilisez seulement 'Dino' pour désigner le dino.";
+  const commonSuffix = "qu'un gentil vélociraptor de compagnie pourrait faire. Si l'utilisateur a fourni des détails, utilisez-les. Restez-en à une seule phrase concise. Générez la description en français, et utilisez seulement 'Dino' pour désigner le dino.";
 
   const basePrompt = silly ?
     `${commonPrefix} courte, amusante et légèrement absurde (par exemple, une activité d'humain) ${commonSuffix}` :

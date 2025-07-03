@@ -13,12 +13,21 @@ interface Activity {
   timestamp: Timestamp;
 }
 
+// Define the structure for interaction request data
+interface InteractionRequestData {
+  interactionType?: string;
+  interactionDetails?: string;
+}
+
 function App() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [diary, setDiary] = useState<Activity[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
-  const [debugMode, setDebugMode] = useState(false)
+
+  // New state for interactions
+  const [selectedInteraction, setSelectedInteraction] = useState<string>('')
+  const [interactionDetails, setInteractionDetails] = useState<string>('')
 
   // Check if the latest activity is recent (within 2 hours)
   const latestActivity = diary[0];
@@ -51,16 +60,6 @@ function App() {
   };
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'd') {
-        setDebugMode((prev) => !prev);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser)
       setLoading(false)
@@ -87,18 +86,57 @@ function App() {
     return () => unsubscribe();
   }, [user]);
 
-  const handleGenerateActivity = async () => {
+  const handleGenerateActivity = async (isAmbient: boolean = false) => {
     setIsGenerating(true)
     try {
       const functions = getFunctions()
       const generateActivity = httpsCallable(functions, 'generateActivity')
-      await generateActivity()
+
+      // Prepare data to send to the function
+      const requestData: InteractionRequestData = {}
+      if (!isAmbient && selectedInteraction && interactionDetails.trim()) {
+        requestData.interactionType = selectedInteraction
+        requestData.interactionDetails = interactionDetails.trim()
+      }
+
+      await generateActivity(requestData)
+
+      // Reset interaction state after generating
+      setSelectedInteraction('')
+      setInteractionDetails('')
+
       // No need to set activity state here, the onSnapshot listener will do it.
     } catch (error) {
       console.error("Error calling generateActivity function:", error)
       alert("Ça a pas marché... faut demander à Pi-Lu...")
     } finally {
       setIsGenerating(false)
+    }
+  }
+
+  const handleInteractionSelect = (type: string) => {
+    if (selectedInteraction === type) {
+      // If clicking the same button, deselect it
+      setSelectedInteraction('')
+      setInteractionDetails('')
+    } else {
+      // If clicking a different button, select it
+      setSelectedInteraction(type)
+      setInteractionDetails('')
+    }
+  }
+
+  const getPlaceholderText = (interactionType?: string) => {
+    const type = interactionType || selectedInteraction
+    switch (type) {
+      case 'feed':
+        return 'Nourrir le dino avec...'
+      case 'play':
+        return 'Jouer à...'
+      case 'other':
+        return "Qu'est-ce qu'on fait?"
+      default:
+        return ''
     }
   }
 
@@ -125,26 +163,77 @@ function App() {
       <main>
           {isGenerating && !recentActivity ? (
             <div className="dino-image-placeholder">
-              <p>Voyons voir...</p>
+              <p>Voyons voir... ⏳</p>
             </div>
           ) : recentActivity ? (
             <img src={recentActivity.imageUrl} alt={recentActivity.description} className="dino-image" />
           ) : (
             <div className="dino-image-placeholder">
-              <p>Que fait ton dino en ce moment?<br/><br/>¯\_(ツ)_/¯<br/><br/>Clique sur le bouton pour le découvrir !</p>
+              <p>Que fait ton dino en ce moment?<br/><br/>¯\_(ツ)_/¯<br/><br/>On l'a pas vu depuis un bout...</p>
             </div>
           )}
           {recentActivity && <p className="dino-activity">{recentActivity.description}</p>}
         <div className="interaction-controls">
-          {(!recentActivity || debugMode) && !isGenerating && (
-            <button onClick={handleGenerateActivity}>Que fais mon dino?</button>
+          {!isGenerating && (
+            <>
+              {!recentActivity && (
+                <button onClick={() => handleGenerateActivity(true)} className="generate-btn">
+                  Que fais mon dino?
+                </button>
+              )}
+              <div className="interaction-options">
+                <div className="interaction-buttons">
+                  <button
+                    className={`interaction-btn ${selectedInteraction === 'feed' ? 'selected' : ''}`}
+                    onClick={() => handleInteractionSelect('feed')}
+                  >
+                    Nourrir
+                  </button>
+                  <button
+                    className={`interaction-btn ${selectedInteraction === 'play' ? 'selected' : ''}`}
+                    onClick={() => handleInteractionSelect('play')}
+                  >
+                    Jouer
+                  </button>
+                  <button
+                    className={`interaction-btn ${selectedInteraction === 'other' ? 'selected' : ''}`}
+                    onClick={() => handleInteractionSelect('other')}
+                  >
+                    Autre
+                  </button>
+                </div>
+                {selectedInteraction && (
+                  <div className="interaction-input">
+                    <input
+                      type="text"
+                      value={interactionDetails}
+                      onChange={(e) => setInteractionDetails(e.target.value)}
+                      placeholder={getPlaceholderText()}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && canSubmit) {
+                          handleGenerateActivity()
+                        }
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+              {selectedInteraction && (
+                <button
+                  onClick={() => handleGenerateActivity(false)}
+                  className="generate-btn"
+                  disabled={!interactionDetails.trim()}
+                >
+                  Confirmer
+                </button>
+              )}
+            </>
           )}
         </div>
         <div className="activity-log">
           <h2>Journal de dino</h2>
           {diary.map((activity) => (
             <div key={activity.id} className="diary-entry">
-              {/* Disabled because images get deleted after a short time */}
               <img src={activity.imageUrl} alt={activity.description} className="diary-image" />
               <div className="diary-content">
                 <p className="diary-description">{activity.description}</p>

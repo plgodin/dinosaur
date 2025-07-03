@@ -39,9 +39,35 @@ export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (reque
   }
   const userId = request.auth.uid;
 
+  // Extract interaction parameters from request data
+  const { interactionType, interactionDetails } = request.data || {};
+
   try {
     // 1. Generate a creative activity description.
     const systemPrompt = generateActivityPrompt();
+
+    // Create user message based on interaction type
+    let userMessage = "Que fait mon dino en ce moment?";
+    let activityType = "ambient";
+
+    if (interactionType && interactionDetails) {
+      activityType = "interactive";
+      switch (interactionType) {
+        case "feed":
+          userMessage = `Je nourris mon dino avec: ${interactionDetails}. Que se passe-t-il?`;
+          break;
+        case "play":
+          userMessage = `Je joue avec mon dino: ${interactionDetails}. Que se passe-t-il?`;
+          break;
+        case "other":
+          userMessage = `${interactionDetails}\n\nQue se passe-t-il avec mon dino?`;
+          break;
+        default:
+          userMessage = "Que fait mon dino en ce moment?";
+          activityType = "ambient";
+      }
+    }
+
     const textResponse = await openai.chat.completions.create({
       model: "gpt-4o",
       temperature: 0.7,
@@ -50,7 +76,7 @@ export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (reque
         content: systemPrompt,
       }, {
         role: "user",
-        content: "Que fait mon dino en ce moment?",
+        content: userMessage,
       }],
       max_tokens: 40,
     });
@@ -96,7 +122,7 @@ export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (reque
       throw new Error("No reference images with supported format (png, jpeg, webp) found in directory.");
     }
 
-    const imagePrompt = `A friendly velociraptor in a realistic and detailed style, currently: ${activityText}`;
+    const imagePrompt = `A friendly velociraptor in a realistic and detailed style just like the reference image(s), currently: ${activityText}`;
     const imageResponse = await openai.images.edit({
       model: "gpt-image-1",
       image: images,
@@ -110,7 +136,7 @@ export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (reque
       throw new Error("Failed to generate image data.");
     }
 
-    const imageBuffer = Buffer.from(imageBase64, "base64");
+    const imageBuffer = Buffer.from(imageBase64!, "base64");
 
     const bucket = storage.bucket();
     const fileName = `dino-images/${userId}/${Date.now()}.png`;
@@ -131,7 +157,7 @@ export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (reque
       description: activityText,
       imageUrl,
       timestamp: Timestamp.now(),
-      interactionType: "ambient",
+      interactionType: activityType,
     };
 
     const userDocRef = db.collection("users").doc(userId);
