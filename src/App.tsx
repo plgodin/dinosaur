@@ -86,7 +86,7 @@ function App() {
     return () => unsubscribe();
   }, [user]);
 
-  const handleGenerateActivity = async (isAmbient: boolean = false) => {
+  const handleGenerateActivity = async () => {
     setIsGenerating(true)
     try {
       const functions = getFunctions()
@@ -94,7 +94,7 @@ function App() {
 
       // Prepare data to send to the function
       const requestData: InteractionRequestData = {}
-      if (!isAmbient && selectedInteraction && interactionDetails.trim()) {
+      if (selectedInteraction && interactionDetails.trim()) {
         requestData.interactionType = selectedInteraction
         requestData.interactionDetails = interactionDetails.trim()
       }
@@ -173,11 +173,10 @@ function App() {
             </div>
           )}
           {recentActivity && <p className="dino-activity">{recentActivity.description}</p>}
-        <div className="interaction-controls">
           {!isGenerating && (
-            <>
+            <div className="interaction-controls">
               {!recentActivity && (
-                <button onClick={() => handleGenerateActivity(true)} className="generate-btn">
+                <button onClick={handleGenerateActivity} className="generate-btn">
                   Que fais mon dino?
                 </button>
               )}
@@ -210,7 +209,7 @@ function App() {
                       onChange={(e) => setInteractionDetails(e.target.value)}
                       placeholder={getPlaceholderText()}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter' && canSubmit) {
+                        if (e.key === 'Enter' && interactionDetails.trim()) {
                           handleGenerateActivity()
                         }
                       }}
@@ -220,16 +219,15 @@ function App() {
               </div>
               {selectedInteraction && (
                 <button
-                  onClick={() => handleGenerateActivity(false)}
+                  onClick={handleGenerateActivity}
                   className="generate-btn"
                   disabled={!interactionDetails.trim()}
                 >
                   Confirmer
                 </button>
               )}
-            </>
+            </div>
           )}
-        </div>
         <div className="activity-log">
           <h2>Journal de dino</h2>
           {diary.map((activity) => (
