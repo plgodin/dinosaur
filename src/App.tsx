@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { auth, db } from './firebase'
 import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signInAnonymously, type User } from 'firebase/auth'
 import { getFunctions, httpsCallable } from 'firebase/functions'
-import { collection, query, orderBy, onSnapshot, Timestamp } from 'firebase/firestore'
+import { collection, query, orderBy, onSnapshot, Timestamp, limit, startAfter, getDocs, type QueryDocumentSnapshot } from 'firebase/firestore'
 import './App.css'
 
 // Define the structure of the activity data
@@ -19,11 +19,17 @@ interface InteractionRequestData {
   interactionDetails?: string;
 }
 
+const ActivitiesPerBatch = 2;
+
 function App() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [diary, setDiary] = useState<Activity[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
+  const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+
 
   // New state for interactions
   const [selectedInteraction, setSelectedInteraction] = useState<string>('')
@@ -70,10 +76,15 @@ function App() {
   }, [])
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setDiary([]);
+      setHasMore(true);
+      setLastDoc(null);
+      return;
+    }
 
     const activitiesCol = collection(db, 'users', user.uid, 'activities');
-    const q = query(activitiesCol, orderBy('timestamp', 'desc'));
+    const q = query(activitiesCol, orderBy('timestamp', 'desc'), limit(ActivitiesPerBatch));
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const userActivities = querySnapshot.docs.map(doc => ({
@@ -81,10 +92,61 @@ function App() {
         ...doc.data()
       } as Activity));
       setDiary(userActivities);
+
+      const lastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
+      setLastDoc(lastVisible);
+
+      if (querySnapshot.docs.length < ActivitiesPerBatch) {
+        setHasMore(false);
+      } else {
+        setHasMore(true);
+      }
     });
 
     return () => unsubscribe();
   }, [user]);
+
+  const loadMoreActivities = useCallback(async () => {
+    if (loadingMore || !hasMore || !lastDoc || !user) return;
+    setLoadingMore(true);
+
+    try {
+      const activitiesCol = collection(db, 'users', user.uid, 'activities');
+      const q = query(activitiesCol, orderBy('timestamp', 'desc'), startAfter(lastDoc), limit(ActivitiesPerBatch));
+      const documentSnapshots = await getDocs(q);
+
+      const newActivities = documentSnapshots.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      } as Activity));
+
+      setDiary(prev => [...prev, ...newActivities]);
+
+      const newLastVisible = documentSnapshots.docs[documentSnapshots.docs.length - 1];
+      setLastDoc(newLastVisible);
+
+      if (documentSnapshots.docs.length < ActivitiesPerBatch) {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error("Error loading more activities:", error);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [user, lastDoc, hasMore, loadingMore]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.innerHeight + document.documentElement.scrollTop < document.documentElement.offsetHeight - 100 || loadingMore || !hasMore) {
+        return
+      }
+      loadMoreActivities()
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [loadingMore, hasMore, loadMoreActivities]);
+
 
   const handleGenerateActivity = async () => {
     setIsGenerating(true)
@@ -245,6 +307,8 @@ function App() {
               </div>
             </div>
           ))}
+          {loadingMore && <div className="loading-more"><p>Chargement...</p></div>}
+          {!hasMore && diary.length > 0 && <div className="end-of-diary"><p>C'est le début de l'histoire de dino!</p></div>}
         </div>
       </main>
     </div>

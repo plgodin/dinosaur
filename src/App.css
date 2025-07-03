@@ -541,3 +541,15 @@ body::before {
 .auth-options button:first-of-type:hover {
   background: #3367d6;
 }
+
+.loading-more, .end-of-diary {
+  text-align: center;
+  padding: 2rem;
+  font-size: 1.1rem;
+  color: #718096;
+  font-weight: 500;
+}
+
+.loading-more p {
+  animation: pulse 1.5s infinite ease-in-out;
+}
