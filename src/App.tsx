@@ -85,7 +85,7 @@ function App() {
       // No need to set activity state here, the onSnapshot listener will do it.
     } catch (error) {
       console.error("Error calling generateActivity function:", error)
-      alert("La génération d'une nouvelle activité a échoué. Veuillez consulter la console pour plus de détails.")
+      alert("Ça a pas marché... faut demander à Pi-Lu...")
     } finally {
       setIsGenerating(false)
     }
@@ -96,7 +96,7 @@ function App() {
   }
 
   if (!user) {
-    return <div>Impossible de se connecter. Veuillez réessayer plus tard.</div>
+    return <div>Impossible de se connecter. Réessayer plus tard.</div>
   }
 
   return (
@@ -107,7 +107,7 @@ function App() {
       <main>
           {isGenerating && !recentActivity ? (
             <div className="dino-image-placeholder">
-              <p>On regarde ce que fait ton dino...</p>
+              <p>Voyons voir...</p>
             </div>
           ) : recentActivity ? (
             <img src={recentActivity.imageUrl} alt={recentActivity.description} className="dino-image" />
@@ -118,10 +118,8 @@ function App() {
           )}
           {recentActivity && <p className="dino-activity">{recentActivity.description}</p>}
         <div className="interaction-controls">
-          {(!recentActivity || debugMode) && (
-            <button onClick={handleGenerateActivity} disabled={isGenerating}>
-              {isGenerating ? 'On le cherche...' : 'Que fait mon dino?'}
-            </button>
+          {(!recentActivity || debugMode) && !isGenerating && (
+            <button onClick={handleGenerateActivity}>Que fais mon dino?</button>
           )}
         </div>
         <div className="activity-log">
