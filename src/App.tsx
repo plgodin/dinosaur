@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { auth, db } from './firebase'
-import { onAuthStateChanged, signInAnonymously, type User } from 'firebase/auth'
+import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signInAnonymously, type User } from 'firebase/auth'
 import { getFunctions, httpsCallable } from 'firebase/functions'
 import { collection, query, orderBy, onSnapshot, Timestamp } from 'firebase/firestore'
 import './App.css'
@@ -33,6 +33,23 @@ function App() {
     }
   }
 
+  const handleSignInWithGoogle = async () => {
+    const provider = new GoogleAuthProvider()
+    try {
+      await signInWithPopup(auth, provider)
+    } catch (error) {
+      console.error("Google sign-in error", error)
+    }
+  }
+
+  const handleSignInAnonymously = async () => {
+    try {
+      await signInAnonymously(auth);
+    } catch (error) {
+      console.error("Anonymous sign-in error", error);
+    }
+  };
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'd') {
@@ -45,13 +62,7 @@ function App() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser)
-      } else {
-        signInAnonymously(auth).catch((error) => {
-          console.error("Anonymous sign-in error", error)
-        })
-      }
+      setUser(currentUser)
       setLoading(false)
     })
 
@@ -96,7 +107,14 @@ function App() {
   }
 
   if (!user) {
-    return <div>Impossible de se connecter. Réessayer plus tard.</div>
+    return (
+      <div className="auth-options">
+        <h1>Allô Lau!</h1>
+        <p>Connecte-toi avec Google sinon tu risques de perdre ton dino 😳</p>
+        <button onClick={handleSignInWithGoogle}>✅ Continuer avec Google 👍</button>
+        <button onClick={handleSignInAnonymously}>❌ Continuer en anonyme 🙅🏻‍♂️</button>
+      </div>
+    );
   }
 
   return (

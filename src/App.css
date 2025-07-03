@@ -94,8 +94,6 @@ body::before {
   position: relative;
 }
 
-
-
 .App-header h1 {
   font-size: 2.5rem;
   font-weight: 700;
@@ -166,7 +164,7 @@ body::before {
   font-weight: 500;
   line-height: 1.6;
   margin: 0;
-  padding: 1.5rem;
+  padding: 1rem;
   background: white;
   border-radius: 12px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -360,7 +358,7 @@ body::before {
 @media (max-width: 768px) {
   .App {
     margin: 1rem;
-    padding: 1.5rem;
+    padding: 1rem;
     border-radius: 16px;
   }
 
@@ -403,8 +401,6 @@ body::before {
 
 /* Subtle animations */
 
-
-
 /* Scroll animations */
 @keyframes fadeInUp {
   from {
@@ -427,4 +423,67 @@ body::before {
 
 .diary-entry:nth-child(odd) {
   animation-delay: 0.2s;
+}
+
+.auth-options {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  gap: 2rem;
+  padding: 2rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.auth-options h1 {
+  font-size: 3rem;
+  font-weight: 700;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.auth-options p {
+  max-width: 500px;
+  text-align: center;
+  margin: 0;
+  font-size: 1.2rem;
+  line-height: 1.6;
+  opacity: 0.9;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.auth-options button {
+  background: white;
+  color: #333;
+  border: none;
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  min-width: 280px;
+}
+
+.auth-options button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  background: #f8f9fa;
+}
+
+.auth-options button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.auth-options button:first-of-type {
+  background: #4285f4;
+  color: white;
+}
+
+.auth-options button:first-of-type:hover {
+  background: #3367d6;
 }
