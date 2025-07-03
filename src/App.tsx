@@ -161,7 +161,7 @@ function App() {
         <h1>Le dino à Lau</h1>
       </header>
       <main>
-          {isGenerating && !recentActivity ? (
+          {isGenerating ? (
             <div className="dino-image-placeholder">
               <p>Voyons voir... ⏳</p>
             </div>
@@ -172,7 +172,7 @@ function App() {
               <p>Que fait ton dino en ce moment?<br/><br/>¯\_(ツ)_/¯<br/><br/>On l'a pas vu depuis un bout...</p>
             </div>
           )}
-          {recentActivity && <p className="dino-activity">{recentActivity.description}</p>}
+          {!isGenerating && recentActivity && <p className="dino-activity">{recentActivity.description}</p>}
           {!isGenerating && (
             <div className="interaction-controls">
               {!recentActivity && (

@@ -78,7 +78,7 @@ export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (reque
         role: "user",
         content: userMessage,
       }],
-      max_tokens: 40,
+      max_tokens: 50,
     });
 
     const activityText = textResponse.choices[0].message.content;
@@ -122,7 +122,7 @@ export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (reque
       throw new Error("No reference images with supported format (png, jpeg, webp) found in directory.");
     }
 
-    const imagePrompt = `A friendly velociraptor in a realistic and detailed style just like the reference image(s), currently: ${activityText}`;
+    const imagePrompt = `A scene depicting the velociraptor from the reference image(s), currently: ${activityText}.\n The scene should be realistic and detailed.`;
     const imageResponse = await openai.images.edit({
       model: "gpt-image-1",
       image: images,

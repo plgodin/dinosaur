@@ -9,8 +9,9 @@ import { DateTime } from "luxon";
 function getTimeOfDay(date: Date): string {
   const dt = DateTime.fromJSDate(date, { zone: "America/Toronto" });
   const hour = dt.hour;
-  if (hour >= 5 && hour < 12) return "le matin";
-  if (hour >= 12 && hour < 18) return "l'après-midi";
+  if (hour >= 5 && hour < 11) return "le matin";
+  if (hour >= 11 && hour < 13) return "le midi";
+  if (hour >= 13 && hour < 18) return "l'après-midi";
   if (hour >= 18 && hour < 22) return "le soir";
   return "la nuit";
 }
@@ -22,10 +23,10 @@ function getTimeOfDay(date: Date): string {
  */
 function getSpecialDay(date: Date): string | null {
   const dt = DateTime.fromJSDate(date, { zone: "America/Toronto" });
-  const hd = new Holidays("CA");
+  const hd = new Holidays("CA", "QC");
   const holiday = hd.isHoliday(dt.toJSDate());
   if (holiday && holiday[0]?.name) {
-    return `C'est ${holiday[0].name.toLowerCase()}.`;
+    return `C'est ${holiday[0].name.toLowerCase()} aujourd'hui.`;
   }
   // Dino's birthday: July 4th
   if (dt.month === 7 && dt.day === 4) {
@@ -45,17 +46,15 @@ export function generateActivityPrompt(date: Date = new Date()): string {
   const timeOfDay = getTimeOfDay(date);
   const specialDay = getSpecialDay(date);
 
-  const commonPrefix = "Vous êtes un écrivain créatif pour une application d'animal de compagnie virtuel. Décrivez une activité";
-  const commonSuffix = "qu'un gentil vélociraptor de compagnie pourrait faire. Si l'utilisateur a fourni des détails, utilisez-les. Restez-en à une seule phrase concise. Générez la description en français, et utilisez seulement 'dino' pour désigner le dino.";
+  const basePrompt = "Vous êtes un écrivain créatif pour une application d'animal de compagnie virtuel. Décrivez une activité" +
+    (silly ? " courte, amusante et légèrement absurde (par exemple, une activité d'humain)" : " réaliste ou quotidienne") +
+    " qu'un gentil vélociraptor de compagnie (sans plumes) pourrait faire. Si l'utilisateur a fourni des détails, mentionnez-les. Restez-en à une seule phrase concise. Générez la description en français, et utilisez seulement 'dino' pour désigner le dino. Utilisez le 'tu' plutôt que le 'vous'.\n" +
+    " Voici des éléments de contexte. Ils ne sont pas tous nécessairement pertinents pour l'activité, mentionnez seulement ce qui est pertinent:\n";
 
-  const basePrompt = silly ?
-    `${commonPrefix} courte, amusante et légèrement absurde (par exemple, une activité d'humain) ${commonSuffix}` :
-    `${commonPrefix} réaliste, paisible ou quotidienne ${commonSuffix}`;
-
-  let context = `Il est ${timeOfDay}.`;
+  const context = [`Il est ${timeOfDay}.`];
   if (specialDay) {
-    context += " " + specialDay;
+    context.push(specialDay);
   }
 
-  return `${basePrompt}\n${context}`;
+  return `${basePrompt}\n${context.join("\n")}`;
 }
