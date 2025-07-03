@@ -36,8 +36,8 @@ function App() {
     const now = new Date();
     const activityDate = latestActivity.timestamp.toDate();
     const diffMs = now.getTime() - activityDate.getTime();
-    const twoHoursMs = 2 * 60 * 60 * 1000;
-    if (diffMs <= twoHoursMs) {
+    const oneHourMs = 60 * 60 * 1000;
+    if (diffMs <= oneHourMs) {
       recentActivity = latestActivity;
     }
   }

@@ -42,9 +42,43 @@ export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (reque
   // Extract interaction parameters from request data
   const { interactionType, interactionDetails } = request.data || {};
 
+  // Reference to the user's document – we will reuse this later when saving the new activity.
+  const userDocRef = db.collection("users").doc(userId);
+
+  // Retrieve the last 5 activities so the model can avoid repetition and optionally provide continuity.
+  const recentActivitiesSnap = await userDocRef
+    .collection("activities")
+    .orderBy("timestamp", "desc")
+    .limit(10)
+    .get();
+
+  type RecentActivity = { description: string; timestamp: Timestamp };
+  const recentActivities = recentActivitiesSnap.docs.map((doc) => doc.data() as RecentActivity);
+
+  const now = Date.now();
+  const twoHoursMs = 2 * 60 * 60 * 1000;
+
+  const activitiesList = recentActivities
+    .map((a, idx) => `${idx + 1}. ${a.description}`)
+    .join("\n");
+
+  const mostRecentIsFresh =
+    recentActivities[0] && now - recentActivities[0].timestamp.toDate().getTime() <= twoHoursMs;
+
+  let activitiesContext = "";
+  if (recentActivities.length > 0) {
+    activitiesContext =
+      `Voici les ${recentActivities.length} dernières activités de dino (de la plus récente à la plus ancienne):\n${activitiesList}\n\n` +
+      `Évite de répéter ces activités. ` +
+      (mostRecentIsFresh
+        ? "Tu peux faire un lien logique avec l'activité #1 parce qu'elle est très récente, mais ce n'est pas obligatoire. "
+        : "") +
+      "Ne t'enferme pas dans une suite d'activités trop similaires.";
+  }
+
   try {
     // 1. Generate a creative activity description.
-    const systemPrompt = generateActivityPrompt();
+    const systemPrompt = generateActivityPrompt() + (activitiesContext ? `\n\n${activitiesContext}` : "");
 
     // Create user message based on interaction type
     let userMessage = "Que fait mon dino en ce moment?";
@@ -160,7 +194,6 @@ export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (reque
       interactionType: activityType,
     };
 
-    const userDocRef = db.collection("users").doc(userId);
     const dinoDocRef = userDocRef.collection("dino").doc("main");
 
     // Check if dino exists, if not, create it with a name.
