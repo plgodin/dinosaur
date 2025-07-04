@@ -11,6 +11,7 @@ interface Activity {
   description: string;
   imageUrl: string;
   timestamp: Timestamp;
+  interactionType?: string; // "ambient", "feed", "play", or "custom"
 }
 
 // Define the structure for interaction request data
@@ -46,6 +47,19 @@ function App() {
       recentActivity = latestActivity;
     }
   }
+
+  // Check if there's been a recent feed activity (within 8 hours)
+  const hasRecentFeed = diary.some(activity => {
+    if (activity.interactionType !== 'feed') return false;
+    const now = new Date();
+    const activityDate = activity.timestamp.toDate();
+    const diffMs = now.getTime() - activityDate.getTime();
+    const eightHoursMs = 8 * 60 * 60 * 1000;
+    return diffMs <= eightHoursMs;
+  });
+
+  // Check if feed button should be disabled
+  const isFeedDisabled = hasRecentFeed;
 
   const handleSignInWithGoogle = async () => {
     const provider = new GoogleAuthProvider()
@@ -248,8 +262,9 @@ function App() {
               <div className="interaction-options">
                 <div className="interaction-buttons">
                   <button
-                    className={`interaction-btn ${selectedInteraction === 'feed' ? 'selected' : ''}`}
-                    onClick={() => handleInteractionSelect('feed')}
+                    className={`interaction-btn ${selectedInteraction === 'feed' ? 'selected' : ''} ${isFeedDisabled ? 'disabled' : ''}`}
+                    onClick={() => !isFeedDisabled && handleInteractionSelect('feed')}
+                    disabled={isFeedDisabled}
                   >
                     Nourrir
                   </button>

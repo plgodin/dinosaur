@@ -52,7 +52,7 @@ export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (reque
     .limit(10)
     .get();
 
-  type RecentActivity = { description: string; timestamp: Timestamp };
+  type RecentActivity = { description: string; timestamp: Timestamp; interactionType?: string };
   const recentActivities = recentActivitiesSnap.docs.map((doc) => doc.data() as RecentActivity);
   const totalActivities = recentActivitiesSnap.size;
 
@@ -86,20 +86,22 @@ export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (reque
     let activityType = "ambient";
 
     if (interactionType && interactionDetails) {
-      activityType = "interactive";
       switch (interactionType) {
         case "feed":
+          activityType = "feed";
           userMessage = `Je nourris mon dino avec: ${interactionDetails}. Que se passe-t-il?`;
           break;
         case "play":
+          activityType = "play";
           userMessage = `Je joue avec mon dino: ${interactionDetails}. Que se passe-t-il?`;
           break;
         case "other":
+          activityType = "custom";
           userMessage = `${interactionDetails}\n\nQue se passe-t-il avec mon dino?`;
           break;
         default:
-          userMessage = "Que fait mon dino en ce moment?";
           activityType = "ambient";
+          userMessage = "Que fait mon dino en ce moment?";
       }
     }
 
