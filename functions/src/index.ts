@@ -24,9 +24,6 @@ const storage = getStorage();
 
 const openaiApiKey = defineSecret("OPENAI_API_KEY");
 
-// The "DNA" of our dinosaur, used to keep its appearance consistent.
-// We are now using reference images instead of a DNA prompt.
-
 export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (request) => {
   const openai = new OpenAI({
     apiKey: openaiApiKey.value(),
@@ -70,10 +67,10 @@ export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (reque
   if (recentActivities.length > 0) {
     activitiesContext =
       `Voici les ${recentActivities.length} dernières activités de dino (de la plus récente à la plus ancienne):\n${activitiesList}\n\n` +
-      `Évite de répéter ces activités. ` +
-      (mostRecentIsFresh
-        ? "Tu peux faire un lien logique avec l'activité #1 parce qu'elle est très récente, mais ce n'est pas obligatoire. "
-        : "") +
+      "Évite de répéter ces activités. " +
+      (mostRecentIsFresh ?
+        "Tu peux faire un lien logique avec l'activité #1 parce qu'elle est très récente, mais ce n'est pas obligatoire. " :
+        "") +
       "Ne t'enferme pas dans une suite d'activités trop similaires.";
   }
 
@@ -87,21 +84,21 @@ export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (reque
 
     if (interactionType && interactionDetails) {
       switch (interactionType) {
-        case "feed":
-          activityType = "feed";
-          userMessage = `Je nourris mon dino avec: ${interactionDetails}. Que se passe-t-il?`;
-          break;
-        case "play":
-          activityType = "play";
-          userMessage = `Je joue avec mon dino: ${interactionDetails}. Que se passe-t-il?`;
-          break;
-        case "other":
-          activityType = "custom";
-          userMessage = `${interactionDetails}\n\nQue se passe-t-il avec mon dino?`;
-          break;
-        default:
-          activityType = "ambient";
-          userMessage = "Que fait mon dino en ce moment?";
+      case "feed":
+        activityType = "feed";
+        userMessage = `Je nourris mon dino avec: ${interactionDetails}. Que se passe-t-il?`;
+        break;
+      case "play":
+        activityType = "play";
+        userMessage = `Je joue avec mon dino: ${interactionDetails}. Que se passe-t-il?`;
+        break;
+      case "other":
+        activityType = "custom";
+        userMessage = `${interactionDetails}\n\nQue se passe-t-il avec mon dino?`;
+        break;
+      default:
+        activityType = "ambient";
+        userMessage = "Que fait mon dino en ce moment?";
       }
     }
 
