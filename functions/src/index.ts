@@ -14,7 +14,7 @@ import OpenAI, { toFile } from "openai";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore, Timestamp } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
-import { generateActivityPrompt } from "./promptUtils";
+import { generateActivityPrompt, generateImagePrompt } from "./promptUtils";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -54,6 +54,7 @@ export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (reque
 
   type RecentActivity = { description: string; timestamp: Timestamp };
   const recentActivities = recentActivitiesSnap.docs.map((doc) => doc.data() as RecentActivity);
+  const totalActivities = recentActivitiesSnap.size;
 
   const now = Date.now();
   const twoHoursMs = 2 * 60 * 60 * 1000;
@@ -78,7 +79,7 @@ export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (reque
 
   try {
     // 1. Generate a creative activity description.
-    const systemPrompt = generateActivityPrompt() + (activitiesContext ? `\n\n${activitiesContext}` : "");
+    const systemPrompt = generateActivityPrompt(totalActivities) + (activitiesContext ? `\n\n${activitiesContext}` : "");
 
     // Create user message based on interaction type
     let userMessage = "Que fait mon dino en ce moment?";
@@ -156,7 +157,7 @@ export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (reque
       throw new Error("No reference images with supported format (png, jpeg, webp) found in directory.");
     }
 
-    const imagePrompt = `A scene depicting the velociraptor from the reference image(s), currently: ${activityText}.\n The scene should be realistic and detailed.`;
+    const imagePrompt = generateImagePrompt(activityText, totalActivities);
     const imageResponse = await openai.images.edit({
       model: "gpt-image-1",
       image: images,

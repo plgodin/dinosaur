@@ -37,10 +37,11 @@ function getSpecialDay(date: Date): string | null {
 
 /**
  * Generates a system prompt for the activity generator, including context like time of day and special days (Eastern Time).
+ * @param {number} totalActivities - The total number of activities generated for the user.
  * @param {Date} [date=new Date()] - The date to use for context (defaults to now).
  * @return {string} The assembled system prompt.
  */
-export function generateActivityPrompt(date: Date = new Date()): string {
+export function generateActivityPrompt(totalActivities: number, date: Date = new Date()): string {
   // 80% normal, 20% silly
   const silly = Math.random() < 0.2;
   const timeOfDay = getTimeOfDay(date);
@@ -56,5 +57,34 @@ export function generateActivityPrompt(date: Date = new Date()): string {
     context.push(specialDay);
   }
 
+  let relationshipContext = "";
+  if (totalActivities < 10) {
+    relationshipContext = "Le dino vient de rencontrer l'utilisateur et est un peu timide mais curieux.";
+  } else if (totalActivities < 30) {
+    relationshipContext = "Le dino commence à bien connaître l'utilisateur et est relativement amical envers l'utilisateur.";
+  } else {
+    relationshipContext = "Le dino est très proche et loyal envers l'utilisateur.";
+  }
+  context.push(relationshipContext);
+
   return `${basePrompt}\n${context.join("\n")}`;
+}
+
+/**
+ * Generates a prompt for the image generator based on the activity and relationship level.
+ * @param {string} activityText - The text of the generated activity.
+ * @param {number} totalActivities - The total number of activities, used to determine relationship.
+ * @return {string} The assembled image prompt.
+ */
+export function generateImagePrompt(activityText: string, totalActivities: number): string {
+  let relationshipContext = "";
+  if (totalActivities < 10) {
+    relationshipContext = "The velociraptor appears friendly but cautious.";
+  } else if (totalActivities < 30) {
+    relationshipContext = "The velociraptor appears friendly and confident.";
+  } else {
+    relationshipContext = "The velociraptor appears very friendly, loyal, and comfortable.";
+  }
+
+  return `A scene depicting the velociraptor from the reference image(s), currently: ${activityText}. ${relationshipContext} The scene should be realistic and detailed.`;
 }
