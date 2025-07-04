@@ -4,6 +4,7 @@ import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signInAnonymou
 import { getFunctions, httpsCallable } from 'firebase/functions'
 import { collection, query, orderBy, onSnapshot, Timestamp, limit, startAfter, getDocs } from 'firebase/firestore'
 import './App.css'
+import Onboarding from './Onboarding'
 
 // Define the structure of the activity data
 interface Activity {
@@ -25,6 +26,8 @@ const ActivitiesPerBatch = 2;
 function App() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [checkedForNewUser, setCheckedForNewUser] = useState(false);
   const [diary, setDiary] = useState<Activity[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false);
@@ -80,13 +83,31 @@ function App() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser)
-      setLoading(false)
-    })
+      setUser(currentUser);
+      setLoading(false);
+    });
 
     // Cleanup subscription on unmount
-    return () => unsubscribe()
-  }, [])
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setCheckedForNewUser(true); // No user, so we can consider the check done.
+      return;
+    }
+
+    const checkNewUser = async () => {
+      const activitiesCol = collection(db, 'users', user.uid, 'activities');
+      const snapshot = await getDocs(query(activitiesCol, limit(1)));
+      if (snapshot.empty) {
+        setShowOnboarding(true);
+      }
+      setCheckedForNewUser(true);
+    };
+
+    checkNewUser();
+  }, [user]);
 
   useEffect(() => {
     if (!user) {
@@ -205,8 +226,17 @@ function App() {
     }
   }
 
+  const handleOnboardingComplete = () => {
+    setShowOnboarding(false);
+  };
+
   if (loading) {
-    return <div>Chargement...</div>
+    return <div>Chargement...</div>;
+  }
+
+  // While we check if the user is new (async operation), show a loading indicator.
+  if (user && !checkedForNewUser) {
+    return <div>Chargement...</div>;
   }
 
   if (!user) {
@@ -218,6 +248,10 @@ function App() {
         <button onClick={handleSignInAnonymously}>❌ Continuer en anonyme 🙅🏻‍♂️</button>
       </div>
     );
+  }
+
+  if (showOnboarding) {
+    return <Onboarding onComplete={handleOnboardingComplete} />;
   }
 
   const getRelationshipLevel = (totalActivities: number) => {
