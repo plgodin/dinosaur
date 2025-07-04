@@ -1,5 +1,7 @@
 # Le Dino à Lau 🦕
 
+[Live app](https://p5n-dinosaur.web.app/)
+
 Une application web de compagnon dinosaure virtuel alimentée par l'IA, conçue comme un cadeau d'anniversaire spécial. Cette application offre une expérience interactive et joyeuse avec votre dinosaure personnel qui vit sa propre vie et évolue selon vos interactions.
 
 ![Dino App](https://img.shields.io/badge/React-18+-61DAFB?style=for-the-badge&logo=react&logoColor=black)
