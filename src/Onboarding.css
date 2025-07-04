@@ -4,7 +4,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: space-between; /* Pushes content to top and button to bottom */
-  min-height: 100vh;
+  min-height: 100svh;
   padding: 4rem 2rem;
   color: white;
   text-align: center;
