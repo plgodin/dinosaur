@@ -86,5 +86,5 @@ export function generateImagePrompt(activityText: string, totalActivities: numbe
     relationshipContext = "The velociraptor appears very friendly, loyal, and comfortable.";
   }
 
-  return `A scene depicting the velociraptor from the reference image(s), currently: ${activityText}. ${relationshipContext} The scene should be realistic and detailed.`;
+  return `A scene depicting the meter-tall velociraptor from the reference image(s), currently: ${activityText}. ${relationshipContext} The scene should be photo-realistic and detailed, looking like a real photo.`;
 }

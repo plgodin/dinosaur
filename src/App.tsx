@@ -21,7 +21,7 @@ interface InteractionRequestData {
   interactionDetails?: string;
 }
 
-const ActivitiesPerBatch = 2;
+const ActivitiesPerBatch = 10;
 
 function App() {
   const [user, setUser] = useState<User | null>(null)
