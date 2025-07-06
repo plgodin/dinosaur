@@ -54,7 +54,7 @@ function Onboarding({ onComplete }: OnboardingProps) {
         <div className={`fade-in-up ${isFading ? 'visible' : ''}`}>
           <p className="onboarding-text">{page.text}</p>
           {page.image && (
-            <img src={page.image} alt="dino" className="onboarding-image" />
+            <img src={page.image} alt="Charlie" className="onboarding-image" />
           )}
         </div>
       </div>

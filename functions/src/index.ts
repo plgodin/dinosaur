@@ -66,7 +66,7 @@ export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (reque
   let activitiesContext = "";
   if (recentActivities.length > 0) {
     activitiesContext =
-      `Voici les ${recentActivities.length} dernières activités de dino (de la plus récente à la plus ancienne):\n${activitiesList}\n\n` +
+      `Voici les ${recentActivities.length} dernières activités de Charlie le dino (de la plus récente à la plus ancienne):\n${activitiesList}\n\n` +
       "Évite de répéter ces activités. " +
       (mostRecentIsFresh ?
         "Tu peux faire un lien logique avec l'activité #1 parce qu'elle est très récente, mais ce n'est pas obligatoire. " :
@@ -79,26 +79,26 @@ export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (reque
     const systemPrompt = generateActivityPrompt(totalActivities) + (activitiesContext ? `\n\n${activitiesContext}` : "");
 
     // Create user message based on interaction type
-    let userMessage = "Que fait mon dino en ce moment?";
+    let userMessage = "Que fait Charlie le dino en ce moment?";
     let activityType = "ambient";
 
     if (interactionType && interactionDetails) {
       switch (interactionType) {
       case "feed":
         activityType = "feed";
-        userMessage = `Je nourris mon dino avec: ${interactionDetails}. Que se passe-t-il?`;
+        userMessage = `Je nourris Charlie le dino avec: ${interactionDetails}. Que se passe-t-il?`;
         break;
       case "play":
         activityType = "play";
-        userMessage = `Je joue avec mon dino: ${interactionDetails}. Que se passe-t-il?`;
+        userMessage = `Je joue avec Charlie le dino: ${interactionDetails}. Que se passe-t-il?`;
         break;
       case "other":
         activityType = "custom";
-        userMessage = `${interactionDetails}\n\nQue se passe-t-il avec mon dino?`;
+        userMessage = `${interactionDetails}\n\nQue se passe-t-il avec Charlie le dino?`;
         break;
       default:
         activityType = "ambient";
-        userMessage = "Que fait mon dino en ce moment?";
+        userMessage = "Que fait Charlie le dino en ce moment?";
       }
     }
 
@@ -200,7 +200,7 @@ export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (reque
     const dinoDoc = await dinoDocRef.get();
     if (!dinoDoc.exists) {
       await dinoDocRef.set({
-        name: "Dino", // A default name
+        name: "Charlie", // A default name
         // Initialize other personality traits as per blueprint if needed
       });
     }

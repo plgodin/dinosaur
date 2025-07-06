@@ -210,7 +210,7 @@ function App() {
     const type = interactionType || selectedInteraction
     switch (type) {
       case 'feed':
-        return 'Nourrir le dino avec...'
+        return 'Nourrir Charlie avec...'
       case 'play':
         return 'Jouer à...'
       case 'other':
@@ -263,7 +263,7 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>Le dino à Lau</h1>
+        <h1>Charlie le dino</h1>
         {<p className="relationship-level">{relationshipLevel}</p>}
       </header>
       <main>
@@ -275,7 +275,7 @@ function App() {
             <img src={recentActivity.imageUrl} alt={recentActivity.description} className="dino-image" />
           ) : (
             <div className="dino-image-placeholder">
-              <p>Que fait ton dino en ce moment?<br/><br/>¯\_(ツ)_/¯<br/><br/>On l'a pas vu depuis un bout...</p>
+              <p>Que fait Charlie en ce moment?<br/><br/>¯\_(ツ)_/¯<br/><br/>On l'a pas vu depuis un bout...</p>
             </div>
           )}
           {!isGenerating && recentActivity && <p className="dino-activity">{recentActivity.description}</p>}
@@ -283,7 +283,7 @@ function App() {
             <div className="interaction-controls">
               {!recentActivity && (
                 <button onClick={handleGenerateActivity} className="generate-btn">
-                  Que fais mon dino?
+                  Que fais Charlie?
                 </button>
               )}
               <div className="interaction-options">
@@ -336,7 +336,7 @@ function App() {
             </div>
           )}
         <div className="activity-log">
-          <h2>Journal de dino</h2>
+          <h2>Journal de Charlie</h2>
           {diary.map((activity) => (
             <div key={activity.id} className="diary-entry">
               <img src={activity.imageUrl} alt={activity.description} className="diary-image" />
@@ -353,7 +353,7 @@ function App() {
             </div>
           ))}
           {loadingMore && <div className="loading-more"><p>Chargement...</p></div>}
-          {!hasMore && diary.length > 0 && <div className="end-of-diary"><p>C'est le début de l'histoire de dino!</p></div>}
+          {!hasMore && diary.length > 0 && <div className="end-of-diary"><p>C'est le début de l'histoire de Charlie!</p></div>}
         </div>
       </main>
     </div>

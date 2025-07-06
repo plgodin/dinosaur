@@ -49,21 +49,21 @@ export function generateActivityPrompt(totalActivities: number, date: Date = new
 
   const basePrompt = "Vous êtes un écrivain créatif pour une application d'animal de compagnie virtuel. Décrivez une activité" +
     (silly ? " courte, amusante et légèrement absurde (par exemple, une activité d'humain)" : " réaliste ou quotidienne") +
-    " qu'un gentil vélociraptor de compagnie (sans plumes) pourrait faire. Si l'utilisateur a fourni des détails, mentionnez-les. Restez-en à une seule phrase concise. Générez la description en français, et utilisez seulement 'dino' pour désigner le dino. Utilisez le 'tu' plutôt que le 'vous'.\n" +
+    " qu'un gentil vélociraptor de compagnie (sans plumes) pourrait faire. Si l'utilisateur a fourni des détails, mentionnez-les. Restez-en à une seule phrase concise. Générez la description en français. Utilisez le 'tu' plutôt que le 'vous'.\n" +
     " Voici des éléments de contexte. Ils ne sont pas tous nécessairement pertinents pour l'activité, mentionnez seulement ce qui est pertinent:\n";
 
-  const context = [`Il est ${timeOfDay}.`];
+  const context = [`Il est ${timeOfDay}.`, "Le dino s'appelle Charlie."];
   if (specialDay) {
     context.push(specialDay);
   }
 
   let relationshipContext = "";
   if (totalActivities < 10) {
-    relationshipContext = "Le dino vient de rencontrer l'utilisateur et est un peu timide mais curieux.";
+    relationshipContext = "Charlie vient de rencontrer l'utilisateur et est un peu timide mais curieux.";
   } else if (totalActivities < 30) {
-    relationshipContext = "Le dino commence à bien connaître l'utilisateur et est relativement amical envers l'utilisateur.";
+    relationshipContext = "Charlie commence à bien connaître l'utilisateur et est relativement amical envers l'utilisateur.";
   } else {
-    relationshipContext = "Le dino est très proche et loyal envers l'utilisateur.";
+    relationshipContext = "Charlie est très proche et loyal envers l'utilisateur.";
   }
   context.push(relationshipContext);
 
