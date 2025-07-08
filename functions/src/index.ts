@@ -112,7 +112,7 @@ export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (reque
         role: "user",
         content: userMessage,
       }],
-      max_tokens: 50,
+      max_tokens: 100,
     });
 
     const activityText = textResponse.choices[0].message.content;
