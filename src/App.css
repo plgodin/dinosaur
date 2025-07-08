@@ -162,7 +162,7 @@ body::before {
 }
 
 .dino-activity {
-  font-size: 1.3rem;
+  font-size: 1.2rem;
   font-style: italic;
   min-height: 3em;
   color: #4a5568;
@@ -430,8 +430,8 @@ body::before {
 /* Responsive design */
 @media (max-width: 768px) {
   .App {
-    margin: 1rem;
-    padding: 1rem;
+    margin: 0.8rem;
+    padding: 0.8rem;
     border-radius: 16px;
   }
 
