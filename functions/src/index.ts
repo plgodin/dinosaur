@@ -121,102 +121,103 @@ export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (reque
     }
     logger.info("Generated activity text:", activityText);
 
-    // 2. Generate an image based on the activity.
-    const referenceImagePath = path.resolve(__dirname, "../src/reference-images");
-    if (!fs.existsSync(referenceImagePath)) {
-      throw new Error("Reference images directory not found.");
-    }
-
-    const imageFiles = fs.readdirSync(referenceImagePath).slice(0, 4);
-
-    const images = (await Promise.all(
-      imageFiles.map(async (file) => {
-        const filePath = path.join(referenceImagePath, file);
-        const ext = path.extname(file).toLowerCase();
-        let mimeType: string | undefined;
-
-        if (ext === ".png") {
-          mimeType = "image/png";
-        } else if (ext === ".jpg" || ext === ".jpeg") {
-          mimeType = "image/jpeg";
-        } else if (ext === ".webp") {
-          mimeType = "image/webp";
-        } else {
-          logger.warn(`Skipping unsupported file type: ${file}`);
-          return null;
+    // 2. Asynchronously generate and save the image.
+    (async () => {
+      try {
+        const referenceImagePath = path.resolve(__dirname, "../src/reference-images");
+        if (!fs.existsSync(referenceImagePath)) {
+          throw new Error("Reference images directory not found.");
         }
 
-        return await toFile(fs.createReadStream(filePath), file, {
-          type: mimeType,
+        const imageFiles = fs.readdirSync(referenceImagePath).slice(0, 4);
+
+        const images = (await Promise.all(
+          imageFiles.map(async (file) => {
+            const filePath = path.join(referenceImagePath, file);
+            const ext = path.extname(file).toLowerCase();
+            let mimeType: string | undefined;
+
+            if (ext === ".png") {
+              mimeType = "image/png";
+            } else if (ext === ".jpg" || ext === ".jpeg") {
+              mimeType = "image/jpeg";
+            } else if (ext === ".webp") {
+              mimeType = "image/webp";
+            } else {
+              logger.warn(`Skipping unsupported file type: ${file}`);
+              return null;
+            }
+
+            return await toFile(fs.createReadStream(filePath), file, {
+              type: mimeType,
+            });
+          }),
+        )).filter((image): image is NonNullable<typeof image> => image !== null);
+
+        if (images.length === 0) {
+          throw new Error("No reference images with supported format (png, jpeg, webp) found in directory.");
+        }
+
+        const imagePrompt = generateImagePrompt(activityText, totalActivities);
+        const imageResponse = await openai.images.edit({
+          model: "gpt-image-1",
+          image: images,
+          prompt: imagePrompt,
+          n: 1,
+          size: "1024x1024",
         });
-      }),
-    )).filter((image): image is NonNullable<typeof image> => image !== null);
 
-    if (images.length === 0) {
-      throw new Error("No reference images with supported format (png, jpeg, webp) found in directory.");
-    }
+        const imageBase64 = imageResponse.data?.[0]?.b64_json;
+        if (!imageBase64) {
+          throw new Error("Failed to generate image data.");
+        }
 
-    const imagePrompt = generateImagePrompt(activityText, totalActivities);
-    const imageResponse = await openai.images.edit({
-      model: "gpt-image-1",
-      image: images,
-      prompt: imagePrompt,
-      n: 1,
-      size: "1024x1024",
-    });
+        const imageBuffer = Buffer.from(imageBase64!, "base64");
 
-    const imageBase64 = imageResponse.data?.[0]?.b64_json;
-    if (!imageBase64) {
-      throw new Error("Failed to generate image data.");
-    }
+        const bucket = storage.bucket();
+        const fileName = `dino-images/${userId}/${Date.now()}.png`;
+        const file = bucket.file(fileName);
 
-    const imageBuffer = Buffer.from(imageBase64!, "base64");
+        await file.save(imageBuffer, {
+          metadata: {
+            contentType: "image/png",
+          },
+          public: true,
+        });
 
-    const bucket = storage.bucket();
-    const fileName = `dino-images/${userId}/${Date.now()}.png`;
-    const file = bucket.file(fileName);
+        const imageUrl = file.publicUrl();
 
-    await file.save(imageBuffer, {
-      metadata: {
-        contentType: "image/png",
-      },
-      public: true,
-    });
+        logger.info("Generated image and uploaded to:", imageUrl);
 
-    const imageUrl = file.publicUrl();
+        const activityData = {
+          description: activityText,
+          imageUrl,
+          timestamp: Timestamp.now(),
+          interactionType: activityType,
+        };
 
-    logger.info("Generated image and uploaded to:", imageUrl);
+        const dinoDocRef = userDocRef.collection("dino").doc("main");
 
-    const activityData = {
-      description: activityText,
-      imageUrl,
-      timestamp: Timestamp.now(),
-      interactionType: activityType,
-    };
+        const dinoDoc = await dinoDocRef.get();
+        if (!dinoDoc.exists) {
+          await dinoDocRef.set({
+            name: "Charlie",
+          });
+        }
 
-    const dinoDocRef = userDocRef.collection("dino").doc("main");
+        await userDocRef.collection("activities").add(activityData);
 
-    // Check if dino exists, if not, create it with a name.
-    const dinoDoc = await dinoDocRef.get();
-    if (!dinoDoc.exists) {
-      await dinoDocRef.set({
-        name: "Charlie", // A default name
-        // Initialize other personality traits as per blueprint if needed
-      });
-    }
-
-    // Save the new activity
-    await userDocRef.collection("activities").add(activityData);
-
-    // Update the last activity timestamp on the dino document
-    await dinoDocRef.update({
-      lastActivityTimestamp: activityData.timestamp,
-    });
+        await dinoDocRef.update({
+          lastActivityTimestamp: activityData.timestamp,
+        });
+      } catch (error) {
+        logger.error("Error in background image generation:", error);
+      }
+    })();
 
     // 3. Return the results to the client.
     return {
       activityText,
-      imageUrl,
     };
   } catch (error) {
     logger.error("Error generating activity:", error);

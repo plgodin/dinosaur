@@ -30,6 +30,7 @@ function App() {
   const [checkedForNewUser, setCheckedForNewUser] = useState(false);
   const [diary, setDiary] = useState<Activity[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
+  const [pendingActivityText, setPendingActivityText] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [totalActivities, setTotalActivities] = useState(0);
 
@@ -165,6 +166,13 @@ function App() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [loadingMore, hasMore, loadMoreActivities]);
 
+  useEffect(() => {
+    if (pendingActivityText && diary.some(activity => activity.description === pendingActivityText)) {
+      setIsGenerating(false);
+      setPendingActivityText(null);
+    }
+  }, [diary, pendingActivityText]);
+
 
   const handleGenerateActivity = async () => {
     setIsGenerating(true)
@@ -179,7 +187,10 @@ function App() {
         requestData.interactionDetails = interactionDetails.trim()
       }
 
-      await generateActivity(requestData)
+      const result = await generateActivity(requestData)
+      const data = result.data as { activityText: string };
+
+      setPendingActivityText(data.activityText);
 
       // Reset interaction state after generating
       setSelectedInteraction('')
@@ -189,8 +200,7 @@ function App() {
     } catch (error) {
       console.error("Error calling generateActivity function:", error)
       alert("Ça a pas marché... faut demander à Pi-Lu...")
-    } finally {
-      setIsGenerating(false)
+      setIsGenerating(false); // Also stop loading on error
     }
   }
 
