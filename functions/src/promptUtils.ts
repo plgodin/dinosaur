@@ -36,12 +36,30 @@ function getSpecialDay(date: Date): string | null {
 }
 
 /**
+ * Returns the name of a skill level based on its numeric value.
+ * @param {number} level - The numeric skill level.
+ * @return {string} The name of the skill level.
+ */
+function getSkillLevelName(level: number): string {
+  if (level >= 50) return "maître";
+  if (level >= 30) return "expert";
+  if (level >= 13) return "avancé";
+  if (level >= 4) return "intermédiaire";
+  return "débutant";
+}
+
+/**
  * Generates a system prompt for the activity generator, including context like time of day and special days (Eastern Time).
  * @param {number} totalActivities - The total number of activities generated for the user.
+ * @param {Record<string, number>} skills - The user's skills.
  * @param {Date} [date=new Date()] - The date to use for context (defaults to now).
  * @return {string} The assembled system prompt.
  */
-export function generateActivityPrompt(totalActivities: number, date: Date = new Date()): string {
+export function generateActivityPrompt(
+  totalActivities: number,
+  skills: Record<string, number>,
+  date: Date = new Date(),
+): string {
   // 80% normal, 20% silly
   const silly = Math.random() < 0.2;
   const timeOfDay = getTimeOfDay(date);
@@ -55,6 +73,13 @@ export function generateActivityPrompt(totalActivities: number, date: Date = new
   const context = [`Il est ${timeOfDay}.`, "Le dino s'appelle Charlie."];
   if (specialDay) {
     context.push(specialDay);
+  }
+
+  if (Object.keys(skills).length > 0) {
+    const skillStrings = Object.entries(skills).map(([skill, level]) => {
+      return `${skill} (${getSkillLevelName(level)})`;
+    });
+    context.push(`Charlie a les habiletés suivantes: ${skillStrings.join(", ")}.`);
   }
 
   let relationshipContext = "";
@@ -87,4 +112,37 @@ export function generateImagePrompt(activityText: string, totalActivities: numbe
   }
 
   return `A scene depicting the meter-tall velociraptor from the reference image(s), currently: ${activityText}. ${relationshipContext} The scene should be photo-realistic and detailed, looking like a real photo.`;
+}
+
+/**
+ * Generates a system prompt for the skill detection AI.
+ * @param {string[]} skills - The user's current skills.
+ * @param {boolean} isLearning - Whether the activity is a learning activity.
+ * @param {string | undefined} interactionDetails - The user's input for the interaction.
+ * @return {string} The assembled system prompt.
+ */
+export function generateSkillDetectionPrompt(skills: string[], isLearning: boolean, interactionDetails?: string): string {
+  const skillList = skills.join(", ");
+  let prompt = "Tu es un assistant qui doit déterminer quelle habileté est entraînée par une activité. " +
+    "Réponds avec un seul mot ou une courte expression pour l'habileté, avec la première lettre en majuscule et sans ponctuation. " +
+    "Si l'activité ne semble pas entraîner d'habileté, réponds 'Aucune'.";
+
+  prompt += "\n\nExemples de bonnes habiletés: Pâtisserie, Guitare, Hockey, Programmation, Dentisterie, Jardinage.";
+  prompt += "\nExemples de mauvaises habiletés (trop génériques): Coordination manuelle, Musicalité, Charisme.";
+
+  if (skills.length > 0) {
+    prompt += `\n\nVoici les habiletés que Charlie connaît déjà: ${skillList}.`;
+    prompt += " Essaie de faire correspondre l'activité à l'une de ces habiletés si possible.";
+  }
+
+  if (isLearning) {
+    prompt += " L'utilisateur est en train d'apprendre quelque chose à Charlie, donc tu dois absolument retourner une habileté, même si tu dois en inventer une nouvelle.";
+    if (interactionDetails) {
+      prompt += ` Le texte de l'utilisateur est: "${interactionDetails}". La réponse est probablement une version nettoyée de ce texte.`;
+    }
+  } else {
+    prompt += " L'activité n'est pas spécifiquement une activité d'apprentissage, donc ne retourne une habileté que si c'est très pertinent. Ne retourne pas de nouvelle habileté à moins que l'activité le suggère fortement.";
+  }
+
+  return prompt;
 }

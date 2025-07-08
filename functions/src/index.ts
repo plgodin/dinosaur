@@ -14,7 +14,7 @@ import OpenAI, { toFile } from "openai";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore, Timestamp } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
-import { generateActivityPrompt, generateImagePrompt } from "./promptUtils";
+import { generateActivityPrompt, generateImagePrompt, generateSkillDetectionPrompt } from "./promptUtils";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -41,6 +41,17 @@ export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (reque
 
   // Reference to the user's document – we will reuse this later when saving the new activity.
   const userDocRef = db.collection("users").doc(userId);
+  const dinoDocRef = userDocRef.collection("dino").doc("main");
+
+  const dinoDoc = await dinoDocRef.get();
+  if (!dinoDoc.exists) {
+    await dinoDocRef.set({
+      name: "Charlie",
+      skills: {},
+    });
+  }
+
+  const skills = dinoDoc.data()?.skills || {};
 
   // Retrieve the last 5 activities so the model can avoid repetition and optionally provide continuity.
   const recentActivitiesSnap = await userDocRef
@@ -76,7 +87,7 @@ export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (reque
 
   try {
     // 1. Generate a creative activity description.
-    const systemPrompt = generateActivityPrompt(totalActivities) + (activitiesContext ? `\n\n${activitiesContext}` : "");
+    const systemPrompt = generateActivityPrompt(totalActivities, skills) + (activitiesContext ? `\n\n${activitiesContext}` : "");
 
     // Create user message based on interaction type
     let userMessage = "Que fait Charlie le dino en ce moment?";
@@ -91,6 +102,10 @@ export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (reque
       case "play":
         activityType = "play";
         userMessage = `Je joue avec Charlie le dino: ${interactionDetails}. Que se passe-t-il?`;
+        break;
+      case "learn":
+        activityType = "learn";
+        userMessage = `J'apprends à Charlie le dino à: ${interactionDetails}. Que se passe-t-il?`;
         break;
       case "other":
         activityType = "custom";
@@ -196,20 +211,39 @@ export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (reque
           interactionType: activityType,
         };
 
-        const dinoDocRef = userDocRef.collection("dino").doc("main");
-
-        const dinoDoc = await dinoDocRef.get();
-        if (!dinoDoc.exists) {
-          await dinoDocRef.set({
-            name: "Charlie",
-          });
-        }
-
         await userDocRef.collection("activities").add(activityData);
 
         await dinoDocRef.update({
           lastActivityTimestamp: activityData.timestamp,
         });
+
+        // Skill detection and update
+        const isLearning = activityType === "learn";
+        const skillDetectionSystemPrompt = generateSkillDetectionPrompt(Object.keys(skills), isLearning, interactionDetails);
+
+        const skillDetectionResponse = await openai.chat.completions.create({
+          model: "gpt-4o",
+          temperature: 0.2,
+          messages: [{
+            role: "system",
+            content: skillDetectionSystemPrompt,
+          }, {
+            role: "user",
+            content: activityText,
+          }],
+          max_tokens: 20,
+        });
+
+        const detectedSkill = skillDetectionResponse.choices[0].message.content?.trim();
+
+        if (detectedSkill && detectedSkill.toLowerCase() !== "aucune") {
+          logger.info(`Detected skill: ${detectedSkill}`);
+          const currentLevel = skills[detectedSkill] || 0;
+          const newLevel = currentLevel + 1;
+          await dinoDocRef.update({
+            [`skills.${detectedSkill}`]: newLevel,
+          });
+        }
       } catch (error) {
         logger.error("Error in background image generation:", error);
       }

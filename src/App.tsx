@@ -2,9 +2,10 @@ import { useState, useEffect, useCallback } from 'react'
 import { auth, db } from './firebase'
 import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, type User } from 'firebase/auth'
 import { getFunctions, httpsCallable } from 'firebase/functions'
-import { collection, query, orderBy, onSnapshot, Timestamp, limit, startAfter, getDocs } from 'firebase/firestore'
+import { collection, query, orderBy, onSnapshot, Timestamp, limit, startAfter, getDocs, doc } from 'firebase/firestore'
 import './App.css'
 import Onboarding from './Onboarding'
+import Skills from './Skills'
 
 // Define the structure of the activity data
 interface Activity {
@@ -33,6 +34,7 @@ function App() {
   const [pendingActivityText, setPendingActivityText] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [totalActivities, setTotalActivities] = useState(0);
+  const [skills, setSkills] = useState<Record<string, number>>({});
 
 
   // New state for interactions
@@ -108,13 +110,14 @@ function App() {
     if (!user) {
       setDiary([]);
       setTotalActivities(0);
+      setSkills({});
       return;
     }
 
     const activitiesCol = collection(db, 'users', user.uid, 'activities');
     const q = query(activitiesCol, orderBy('timestamp', 'desc'), limit(ActivitiesPerBatch));
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    const unsubscribeActivities = onSnapshot(q, (querySnapshot) => {
       const userActivities = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -122,11 +125,21 @@ function App() {
       setDiary(userActivities);
     });
 
+    const dinoDocRef = doc(db, 'users', user.uid, 'dino', 'main');
+    const unsubscribeSkills = onSnapshot(dinoDocRef, (doc) => {
+      if (doc.exists()) {
+        setSkills(doc.data().skills || {});
+      }
+    });
+
     getDocs(activitiesCol).then((snapshot) => {
       setTotalActivities(snapshot.size);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeActivities();
+      unsubscribeSkills();
+    }
   }, [user]);
 
   const hasMore = diary.length < totalActivities;
@@ -223,6 +236,8 @@ function App() {
         return 'Nourrir Charlie avec...'
       case 'play':
         return 'Jouer à...'
+      case 'learn':
+        return 'Apprendre...'
       case 'other':
         return "Qu'est-ce qu'on fait?"
       default:
@@ -312,6 +327,12 @@ function App() {
                     Jouer
                   </button>
                   <button
+                    className={`interaction-btn ${selectedInteraction === 'learn' ? 'selected' : ''}`}
+                    onClick={() => handleInteractionSelect('learn')}
+                  >
+                    Apprendre
+                  </button>
+                  <button
                     className={`interaction-btn ${selectedInteraction === 'other' ? 'selected' : ''}`}
                     onClick={() => handleInteractionSelect('other')}
                   >
@@ -345,6 +366,7 @@ function App() {
               )}
             </div>
           )}
+        <Skills skills={skills} />
         <div className="activity-log">
           <h2>Journal de Charlie</h2>
           {diary.map((activity) => (
