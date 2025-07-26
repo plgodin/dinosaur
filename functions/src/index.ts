@@ -15,6 +15,7 @@ import { initializeApp } from "firebase-admin/app";
 import { getFirestore, Timestamp } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { generateActivityPrompt, generateImagePrompt, generateSkillDetectionPrompt } from "./promptUtils";
+import { getWeatherContext } from "./weatherUtils";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -23,8 +24,9 @@ const db = getFirestore();
 const storage = getStorage();
 
 const openaiApiKey = defineSecret("OPENAI_API_KEY");
+const weatherApiKey = defineSecret("OPENWEATHER_API_KEY");
 
-export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (request) => {
+export const generateActivity = onCall({ secrets: [openaiApiKey, weatherApiKey] }, async (request) => {
   const openai = new OpenAI({
     apiKey: openaiApiKey.value(),
   });
@@ -36,8 +38,8 @@ export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (reque
   }
   const userId = request.auth.uid;
 
-  // Extract interaction parameters from request data
-  const { interactionType, interactionDetails } = request.data || {};
+  // Extract interaction parameters and location data from request data
+  const { interactionType, interactionDetails, latitude, longitude } = request.data || {};
 
   // Reference to the user's document – we will reuse this later when saving the new activity.
   const userDocRef = db.collection("users").doc(userId);
@@ -86,8 +88,21 @@ export const generateActivity = onCall({ secrets: [openaiApiKey] }, async (reque
   }
 
   try {
-    // 1. Generate a creative activity description.
-    const systemPrompt = generateActivityPrompt(totalActivities, skills) + (activitiesContext ? `\n\n${activitiesContext}` : "");
+    // 1. Get weather context if available
+    const weatherContext = await getWeatherContext(latitude, longitude, weatherApiKey.value());
+
+    // 2. Generate a creative activity description.
+    let systemPrompt = generateActivityPrompt(totalActivities, skills);
+
+    // Add activities context if available
+    if (activitiesContext) {
+      systemPrompt += `\n\n${activitiesContext}`;
+    }
+
+    // Add weather context if available and notable
+    if (weatherContext && weatherContext.isNotable) {
+      systemPrompt += `\n\n${weatherContext.contextText}`;
+    }
 
     // Create user message based on interaction type
     let userMessage = "Que fait Charlie le dino en ce moment?";

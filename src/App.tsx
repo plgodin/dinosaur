@@ -20,6 +20,16 @@ interface Activity {
 interface InteractionRequestData {
   interactionType?: string;
   interactionDetails?: string;
+  latitude?: number;
+  longitude?: number;
+}
+
+// Define location state
+interface LocationState {
+  latitude: number | null;
+  longitude: number | null;
+  permission: 'granted' | 'denied' | 'prompt' | 'unavailable';
+  error: string | null;
 }
 
 const ActivitiesPerBatch = 10;
@@ -35,11 +45,68 @@ function App() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [totalActivities, setTotalActivities] = useState(0);
   const [skills, setSkills] = useState<Record<string, number>>({});
-
+  const [location, setLocation] = useState<LocationState>({
+    latitude: null,
+    longitude: null,
+    permission: 'prompt',
+    error: null
+  });
 
   // New state for interactions
   const [selectedInteraction, setSelectedInteraction] = useState<string>('')
   const [interactionDetails, setInteractionDetails] = useState<string>('')
+
+  // Geolocation functionality
+  const requestLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      setLocation(prev => ({
+        ...prev,
+        permission: 'unavailable',
+        error: 'Geolocation is not supported by this browser.'
+      }));
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          permission: 'granted',
+          error: null
+        });
+      },
+      (error) => {
+        let errorMessage = 'Unknown error occurred';
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = 'Location access denied by user.';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = 'Location information is unavailable.';
+            break;
+          case error.TIMEOUT:
+            errorMessage = 'Location request timed out.';
+            break;
+        }
+        setLocation(prev => ({
+          ...prev,
+          permission: 'denied',
+          error: errorMessage
+        }));
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 10000,
+        maximumAge: 300000 // 5 minutes
+      }
+    );
+  }, []);
+
+  // Request location on component mount
+  useEffect(() => {
+    requestLocation();
+  }, [requestLocation]);
 
   // Check if the latest activity is recent (within 2 hours)
   const latestActivity = diary[0];
@@ -198,6 +265,12 @@ function App() {
       if (selectedInteraction && interactionDetails.trim()) {
         requestData.interactionType = selectedInteraction
         requestData.interactionDetails = interactionDetails.trim()
+      }
+      
+      // Add location data if available
+      if (location.latitude !== null && location.longitude !== null) {
+        requestData.latitude = location.latitude
+        requestData.longitude = location.longitude
       }
 
       const result = await generateActivity(requestData)
