@@ -89,6 +89,7 @@ export const generateActivity = onCall({ secrets: [openaiApiKey, weatherApiKey] 
 
   try {
     // 1. Get weather context if available
+    logger.info("Fetching weather context for coordinates:", { latitude, longitude });
     const weatherContext = await getWeatherContext(latitude, longitude, weatherApiKey.value());
 
     // 2. Generate a creative activity description.
@@ -102,7 +103,12 @@ export const generateActivity = onCall({ secrets: [openaiApiKey, weatherApiKey] 
     // Add weather context if available and notable
     if (weatherContext && weatherContext.isNotable) {
       systemPrompt += `\n\n${weatherContext.contextText}`;
+      logger.info("Added weather context to prompt:", weatherContext.contextText);
+    } else if (weatherContext && !weatherContext.isNotable) {
+      logger.info("Weather context available but not notable, skipping:", weatherContext.contextText);
     }
+
+    logger.info("Final system prompt:", systemPrompt);
 
     // Create user message based on interaction type
     let userMessage = "Que fait Charlie le dino en ce moment?";
@@ -132,6 +138,13 @@ export const generateActivity = onCall({ secrets: [openaiApiKey, weatherApiKey] 
       }
     }
 
+    logger.info("User message for AI:", {
+      activityType,
+      userMessage,
+      interactionType,
+      interactionDetails,
+    });
+
     const textResponse = await openai.chat.completions.create({
       model: "gpt-4o",
       temperature: 0.7,
@@ -143,6 +156,12 @@ export const generateActivity = onCall({ secrets: [openaiApiKey, weatherApiKey] 
         content: userMessage,
       }],
       max_tokens: 100,
+    });
+
+    logger.info("OpenAI API response received:", {
+      usage: textResponse.usage,
+      model: textResponse.model,
+      choices: textResponse.choices.length,
     });
 
     const activityText = textResponse.choices[0].message.content;
