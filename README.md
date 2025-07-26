@@ -22,12 +22,20 @@ Une application web de compagnon dinosaure virtuel alimentée par l'IA, conçue 
 - **Images Cohérentes**: Utilisation d'images de référence pour maintenir l'apparence
 - **Descriptions Créatives**: Textes générés par GPT-4 pour chaque activité
 - **Contextualisation**: Activités appropriées selon l'heure et la saison
+- **🌤️ Météo Intelligente**: Réactions contextuelles aux conditions météo locales
 
 ### 🎮 Interactions Utilisateur
 - **Nourrir**: Donnez à manger à votre dinosaure
 - **Jouer**: Engagez-vous dans des activités ludiques
 - **Autres**: Interactions personnalisées et créatives
 - **Saisie Libre**: Tapez n'importe quoi pour des interactions ouvertes
+
+### 🌤️ Intégration Météo Intelligente
+- **Géolocalisation**: Demande automatique de la position de l'utilisateur
+- **Météo Locale**: Intégration avec OpenWeatherMap pour les conditions actuelles
+- **Réactions Contextuelles**: Charlie réagit aux conditions météo notables
+- **Fallback Montréal**: Utilise la météo de Montréal si la géolocalisation est refusée
+- **IA Invisible**: Météo normale reste discrète, seules les conditions extrêmes influencent les activités
 
 ### 📱 Interface Moderne
 - Design réactif et moderne avec animations fluides
@@ -48,6 +56,7 @@ Une application web de compagnon dinosaure virtuel alimentée par l'IA, conçue 
 - **Firebase Functions** pour la logique serverless
 - **Firebase Authentication** pour la gestion des utilisateurs
 - **Firebase Storage** pour les images générées
+- **OpenWeatherMap API** pour les données météorologiques en temps réel
 - **Firebase Hosting** pour le déploiement
 
 ### Intelligence Artificielle
@@ -55,13 +64,14 @@ Une application web de compagnon dinosaure virtuel alimentée par l'IA, conçue 
 - **OpenAI Image Generation** pour créer des images uniques
 - **Images de référence** pour maintenir la cohérence visuelle
 
-## 🚀 Configuration de Développement
+## Installation et Configuration
 
 ### Prérequis
 - Node.js 18+
 - npm ou yarn
 - Firebase CLI
 - Compte OpenAI avec clé API
+- Compte OpenWeatherMap avec clé API (gratuit)
 
 ### Installation
 
@@ -95,7 +105,14 @@ Une application web de compagnon dinosaure virtuel alimentée par l'IA, conçue 
    ```bash
    # Configurer la clé API OpenAI
    firebase functions:secrets:set OPENAI_API_KEY
+   
+   # Configurer la clé API OpenWeatherMap
+   firebase functions:secrets:set OPENWEATHER_API_KEY
    ```
+   
+   **Obtenir les clés API :**
+   - **OpenAI** : [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+   - **OpenWeatherMap** : [https://openweathermap.org/api](https://openweathermap.org/api) (gratuit jusqu'à 1000 appels/jour)
 
 5. **Images de référence**
    - Placer les images de référence du dinosaure dans `functions/src/reference-images/`

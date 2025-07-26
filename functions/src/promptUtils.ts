@@ -36,16 +36,31 @@ function getSpecialDay(date: Date): string | null {
 }
 
 /**
- * Returns the name of a skill level based on its numeric value.
+ * Returns the name of a skill level based on its numeric value (0-10 scale).
  * @param {number} level - The numeric skill level.
  * @return {string} The name of the skill level.
  */
 function getSkillLevelName(level: number): string {
-  if (level >= 50) return "maître";
-  if (level >= 30) return "expert";
-  if (level >= 13) return "avancé";
+  if (level >= 10) return "maître";
+  if (level >= 8) return "expert";
+  if (level >= 6) return "avancé";
   if (level >= 4) return "intermédiaire";
-  return "débutant";
+  if (level >= 2) return "débutant";
+  return "novice";
+}
+
+/**
+ * Returns the name of a friendship level based on its numeric value (0-10 scale).
+ * @param {number} level - The numeric friendship level.
+ * @return {string} The name of the friendship level.
+ */
+export function getFriendshipLevelName(level: number): string {
+  if (level >= 10) return "meilleur ami";
+  if (level >= 8) return "ami très proche";
+  if (level >= 6) return "bon ami";
+  if (level >= 4) return "ami";
+  if (level >= 2) return "copain";
+  return "connaissance";
 }
 
 /**
@@ -53,12 +68,14 @@ function getSkillLevelName(level: number): string {
  * @param {number} totalActivities - The total number of activities generated for the user.
  * @param {Record<string, number>} skills - The user's skills.
  * @param {Date} [date=new Date()] - The date to use for context (defaults to now).
+ * @param {number} [friendshipLevel] - The friendship level with the triceratops friend (0-10 scale).
  * @return {string} The assembled system prompt.
  */
 export function generateActivityPrompt(
   totalActivities: number,
   skills: Record<string, number>,
   date: Date = new Date(),
+  friendshipLevel?: number,
 ): string {
   // 80% normal, 20% silly
   const silly = Math.random() < 0.2;
@@ -67,7 +84,7 @@ export function generateActivityPrompt(
 
   const basePrompt = "Vous êtes un écrivain créatif pour une application d'animal de compagnie virtuel. Décrivez une activité" +
     (silly ? " courte, amusante et légèrement absurde (par exemple, une activité d'humain)" : " réaliste ou quotidienne") +
-    " qu'un gentil vélociraptor de compagnie (sans plumes) pourrait faire. Si l'utilisateur a fourni des détails, mentionnez-les. Restez-en à une seule phrase concise. Générez la description en français. Utilisez le 'tu' plutôt que le 'vous'.\n" +
+    " qu'un gentil vélociraptor de compagnie pourrait faire. Si l'utilisateur a fourni des détails, mentionnez-les. Restez-en à une seule phrase concise. Générez la description en français. Utilisez le 'tu' plutôt que le 'vous'.\n" +
     " Voici des éléments de contexte. Ils ne sont pas tous nécessairement pertinents pour l'activité, mentionnez seulement ce qui est pertinent:\n";
 
   const context = [`Il est ${timeOfDay}.`, "Le dino s'appelle Charlie."];
@@ -92,6 +109,12 @@ export function generateActivityPrompt(
   }
   context.push(relationshipContext);
 
+  // Add friendship context if present (as last context item)
+  if (friendshipLevel !== undefined && friendshipLevel > 0) {
+    const friendshipName = getFriendshipLevelName(friendshipLevel);
+    context.push(`Charlie considère son ami tricératops comme son ${friendshipName}.`);
+  }
+
   return `${basePrompt}\n${context.join("\n")}`;
 }
 
@@ -99,9 +122,10 @@ export function generateActivityPrompt(
  * Generates a prompt for the image generator based on the activity and relationship level.
  * @param {string} activityText - The text of the generated activity.
  * @param {number} totalActivities - The total number of activities, used to determine relationship.
+ * @param {boolean} withFriend - Whether the activity includes the triceratops friend.
  * @return {string} The assembled image prompt.
  */
-export function generateImagePrompt(activityText: string, totalActivities: number): string {
+export function generateImagePrompt(activityText: string, totalActivities: number, withFriend: boolean): string {
   let relationshipContext = "";
   if (totalActivities < 10) {
     relationshipContext = "The velociraptor appears friendly but cautious.";
@@ -111,7 +135,8 @@ export function generateImagePrompt(activityText: string, totalActivities: numbe
     relationshipContext = "The velociraptor appears very friendly, loyal, and comfortable.";
   }
 
-  return `A scene depicting the meter-tall velociraptor from the reference image(s), currently: ${activityText}. ${relationshipContext} The scene should be photo-realistic and detailed, looking like a real photo.`;
+  const friendText = withFriend ? " and his baby triceratops friend" : "";
+  return `A scene depicting the meter-tall velociraptor${friendText} from the reference image(s), currently: ${activityText}. ${relationshipContext} The scene should be photo-realistic and detailed, looking like a real photo.`;
 }
 
 /**

@@ -6,6 +6,7 @@ import { collection, query, orderBy, onSnapshot, Timestamp, limit, startAfter, g
 import './App.css'
 import Onboarding from './Onboarding'
 import Skills from './Skills'
+import Friends from './Friends'
 
 // Define the structure of the activity data
 interface Activity {
@@ -45,6 +46,7 @@ function App() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [totalActivities, setTotalActivities] = useState(0);
   const [skills, setSkills] = useState<Record<string, number>>({});
+  const [friendshipTriceratops, setFriendshipTriceratops] = useState<number>(0);
   const [location, setLocation] = useState<LocationState>({
     latitude: null,
     longitude: null,
@@ -178,6 +180,7 @@ function App() {
       setDiary([]);
       setTotalActivities(0);
       setSkills({});
+      setFriendshipTriceratops(0);
       return;
     }
 
@@ -195,7 +198,9 @@ function App() {
     const dinoDocRef = doc(db, 'users', user.uid, 'dino', 'main');
     const unsubscribeSkills = onSnapshot(dinoDocRef, (doc) => {
       if (doc.exists()) {
-        setSkills(doc.data().skills || {});
+        const data = doc.data();
+        setSkills(data.skills || {});
+        setFriendshipTriceratops(data.friendship_triceratops || 0);
       }
     });
 
@@ -440,6 +445,7 @@ function App() {
             </div>
           )}
         <Skills skills={skills} />
+        <Friends friendshipTriceratops={friendshipTriceratops} />
         <div className="activity-log">
           <h2>Journal de Charlie</h2>
           {diary.map((activity) => (

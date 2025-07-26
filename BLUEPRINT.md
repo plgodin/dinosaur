@@ -19,6 +19,8 @@ The core philosophy is to create a source of joy, not a source of anxiety. The d
 - **Dynamic Content**: Each activity is described by a short, AI-generated text and accompanied by a unique, AI-generated image.
 - **Visual Consistency**: To ensure the dinosaur looks consistent across all images, we will use a "DNA Prompt." This is a detailed descriptive text of the dinosaur's appearance (e.g., "A friendly T-Rex, chartreuse green with darker forest green stripes, big amber eyes...") that is prepended to every image generation request.
 - **Time-Awareness**: Activities will be contextually appropriate for the time of day, day of the week, and special occasions like the user's birthday or holidays.
+- **Weather-Awareness**: Activities react to local weather conditions when notable (storms, extreme temperatures, etc.). Normal weather remains "AI-invisible" to avoid over-indexing on weather data.
+- **Friend Interactions**: Charlie has a triceratops friend who appears probabilistically in ambient and play activities. The probability increases the longer it's been since their last interaction, following the formula (N+1)*0.1 where N is the number of activities since they last met.
 
 ### 2.3. User Interaction
 
@@ -30,10 +32,9 @@ The core philosophy is to create a source of joy, not a source of anxiety. The d
 ### 2.4. Progression & Personality System
 
 - **Mood System**: The dinosaur will have a simple, descriptive mood (e.g., Playful, Contemplative, Cozy, Excited). The mood is influenced by recent interactions, time of day, and its core personality. It affects the type of activities the dino chooses and how it responds.
-- **Personality Traits**: The dinosaur's personality will evolve based on the types of interactions the user engages in. These are tracked internally as numerical values on a scale but are presented to the user as descriptive text (e.g., "Your dino is becoming quite the adventurer!").
-    - **Energy**: Chill ↔ Energetic
-    - **Curiosity**: Cautious ↔ Adventurous
-    - **Social**: Introverted ↔ Extroverted
+- **Skills System**: Charlie develops skills through various activities, tracked on a 0-10 scale with descriptive levels (novice → débutant → intermédiaire → avancé → expert → maître). Skills are displayed in the UI with progress bars and level names.
+- **Friendship System**: Charlie can develop friendships with other dinosaurs, currently featuring a triceratops friend. Friendship levels range from 0-10 (connaissance → copain → ami → bon ami → ami très proche → meilleur ami) and are displayed with portrait thumbnails and progress gauges.
+- **Activity Tagging**: Activities are tagged to track special interactions (e.g., "triceratops" tag for friend activities), enabling the system to understand relationship patterns and generate contextually appropriate future activities.
 - **Activity Log**: A scrollable, chronological history of all the dinosaur's activities and interactions, complete with the generated text and images.
 
 ## 3. Technical Implementation
@@ -52,20 +53,21 @@ The core philosophy is to create a source of joy, not a source of anxiety. The d
 ```
 /users/{userId}/
   ├─ dino/
-  │   ├─ name: "Rex"
+  │   ├─ name: "Charlie"
   │   ├─ lastActivityTimestamp: 1678886400
-  │   ├─ mood: "Playful"
-  │   └─ personality: {
-  │       ├─ energy: 60,      // (0-100)
-  │       ├─ curiosity: 75,   // (0-100)
-  │       └─ social: 40       // (0-100)
-  │     }
+  │   ├─ skills: {
+  │   │   ├─ "Pâtisserie": 3,     // (0-10 scale)
+  │   │   ├─ "Guitare": 7,        // (0-10 scale)
+  │   │   └─ "Jardinage": 2       // (0-10 scale)
+  │   │ }
+  │   └─ friendship_triceratops: 5  // (0-10 scale)
   └─ activities/
       ├─ {activityId_1}/
       │   ├─ timestamp: 1678886400
-      │   ├─ description: "Rex is attempting to build a pillow fort."
+      │   ├─ description: "Charlie rencontre pour la première fois un jeune tricératops!"
       │   ├─ imageUrl: "https://firebasestorage.googleapis.com/..."
-      │   └─ interactionType: "ambient"
+      │   ├─ interactionType: "ambient"
+      │   └─ tags: ["triceratops"]    // Activity tags for tracking
       └─ {activityId_2}/
           ├─ ...
 ```

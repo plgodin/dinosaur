@@ -54,6 +54,7 @@ export const generateActivity = onCall({ secrets: [openaiApiKey, weatherApiKey] 
   }
 
   const skills = dinoDoc.data()?.skills || {};
+  const friendshipTriceratops = dinoDoc.data()?.friendship_triceratops || 0;
 
   // Retrieve the last 5 activities so the model can avoid repetition and optionally provide continuity.
   const recentActivitiesSnap = await userDocRef
@@ -62,8 +63,20 @@ export const generateActivity = onCall({ secrets: [openaiApiKey, weatherApiKey] 
     .limit(10)
     .get();
 
-  type RecentActivity = { description: string; timestamp: Timestamp; interactionType?: string };
+  type RecentActivity = { description: string; timestamp: Timestamp; interactionType?: string, tags?: string[] };
   const recentActivities = recentActivitiesSnap.docs.map((doc) => doc.data() as RecentActivity);
+
+  // Triceratops friend logic - only for ambient activities or when no interaction is specified
+  let withFriend = false;
+  if (!interactionType || interactionType === "ambient" || interactionType === "play") {
+    const lastFriendActivityIndex = recentActivities.findIndex((activity) => activity.tags?.includes("triceratops"));
+    const activitiesSinceFriend = lastFriendActivityIndex === -1 ? recentActivities.length : lastFriendActivityIndex;
+    const friendProbability = (activitiesSinceFriend + 1) * 0.1;
+    withFriend = Math.random() < friendProbability;
+
+    logger.info(`Triceratops friend check: last seen ${activitiesSinceFriend} activities ago, probability=${friendProbability}, withFriend=${withFriend}`);
+  }
+  withFriend = true;
   const totalActivities = recentActivitiesSnap.size;
 
   const now = Date.now();
@@ -93,7 +106,15 @@ export const generateActivity = onCall({ secrets: [openaiApiKey, weatherApiKey] 
     const weatherContext = await getWeatherContext(latitude, longitude, weatherApiKey.value());
 
     // 2. Generate a creative activity description.
-    let systemPrompt = generateActivityPrompt(totalActivities, skills);
+    let systemPrompt = generateActivityPrompt(totalActivities, skills, new Date(), withFriend ? friendshipTriceratops : undefined);
+
+    if (withFriend) {
+      if (friendshipTriceratops === 0) {
+        systemPrompt += "\n\nSPÉCIAL: Charlie rencontre pour la première fois un jeune tricératops (qui deviendra un jour un grand ami)!";
+      } else {
+        systemPrompt += "\n\nCharlie est avec son ami, un jeune tricératops. Décris ce qu'ils font ensemble.";
+      }
+    }
 
     // Add activities context if available
     if (activitiesContext) {
@@ -178,7 +199,17 @@ export const generateActivity = onCall({ secrets: [openaiApiKey, weatherApiKey] 
           throw new Error("Reference images directory not found.");
         }
 
-        const imageFiles = fs.readdirSync(referenceImagePath).slice(0, 4);
+        let imageFiles = fs.readdirSync(referenceImagePath).slice(0, 4);
+
+        if (withFriend) {
+          const friendImagePath = path.join(referenceImagePath, "friend/charlie_and_triceratops.png");
+          if (fs.existsSync(friendImagePath)) {
+            // Use the friend image as the primary reference
+            imageFiles = ["friend/charlie_and_triceratops.png"];
+          } else {
+            logger.warn("Friend reference image not found, using default images.");
+          }
+        }
 
         const images = (await Promise.all(
           imageFiles.map(async (file) => {
@@ -207,7 +238,7 @@ export const generateActivity = onCall({ secrets: [openaiApiKey, weatherApiKey] 
           throw new Error("No reference images with supported format (png, jpeg, webp) found in directory.");
         }
 
-        const imagePrompt = generateImagePrompt(activityText, totalActivities);
+        const imagePrompt = generateImagePrompt(activityText, totalActivities, withFriend);
         const imageResponse = await openai.images.edit({
           model: "gpt-image-1",
           image: images,
@@ -238,12 +269,22 @@ export const generateActivity = onCall({ secrets: [openaiApiKey, weatherApiKey] 
 
         logger.info("Generated image and uploaded to:", imageUrl);
 
-        const activityData = {
+        const activityData: { description: string; imageUrl: string; timestamp: FirebaseFirestore.Timestamp; interactionType: string; tags?: string[] } = {
           description: activityText,
           imageUrl,
           timestamp: Timestamp.now(),
           interactionType: activityType,
         };
+
+        if (withFriend) {
+          activityData.tags = ["triceratops"];
+
+          // Increment friendship level
+          const newFriendshipLevel = Math.min(10, friendshipTriceratops + 1);
+          await dinoDocRef.update({
+            friendship_triceratops: newFriendshipLevel,
+          });
+        }
 
         await userDocRef.collection("activities").add(activityData);
 

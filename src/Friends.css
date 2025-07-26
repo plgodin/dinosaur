@@ -1,4 +1,4 @@
-.skills-container {
+.friends-container {
   margin: 20px 0;
   padding: 15px;
   background-color: #f8f9fa;
@@ -6,60 +6,78 @@
   border: 1px solid #e9ecef;
 }
 
-.skills-container h3 {
+.friends-container h3 {
   margin: 0 0 15px 0;
   color: #495057;
   font-size: 1.1em;
   font-weight: 600;
 }
 
-.skills-list {
+.friends-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.skill-item {
+.friend-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  background-color: white;
+  gap: 12px;
   padding: 10px;
+  background-color: white;
   border-radius: 6px;
   border: 1px solid #dee2e6;
 }
 
-.skill-info {
+.friend-portrait {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: #e3f2fd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #90caf9;
+}
+
+.friend-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.friend-info {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  flex: 1;
 }
 
-.skill-name {
+.friend-name {
   font-weight: 600;
   color: #495057;
   font-size: 0.9em;
 }
 
-.skill-level {
+.friend-level {
   font-size: 0.8em;
   color: #6c757d;
   font-style: italic;
 }
 
-.skill-bar-container {
-  width: 120px;
+.friendship-bar-container {
+  width: 100%;
   height: 8px;
   background-color: #e9ecef;
   border-radius: 4px;
   overflow: hidden;
-  margin-left: 12px;
+  margin-top: 4px;
 }
 
-.skill-bar {
+.friendship-bar {
   height: 100%;
-  background: linear-gradient(90deg, #64b5f6 0%, #2196f3 50%, #1976d2 100%);
+  background: linear-gradient(90deg, #81c784 0%, #4caf50 50%, #2e7d32 100%);
   transition: width 0.3s ease;
   border-radius: 4px;
 }
